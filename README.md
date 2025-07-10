@@ -1,6 +1,3 @@
-# Machine_Learning_Project
-Machine Learning Project
-
 #  Stroke Prediction using Machine Learning
 
 ##  Project Overview
