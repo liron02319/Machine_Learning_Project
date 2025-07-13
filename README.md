@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/a01eaadd-b1ca-4276-bcd3-ac3d2b5dc235" alt="Logo" width="450" height="300" align="right">
+  <img src="https://github.com/user-attachments/assets/a01eaadd-b1ca-4276-bcd3-ac3d2b5dc235" alt="Logo" width="350" height="300" align="right">
 </p>
 
 #  Stroke Prediction using Machine Learning
