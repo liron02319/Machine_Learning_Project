@@ -1,14 +1,11 @@
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/a01eaadd-b1ca-4276-bcd3-ac3d2b5dc235" alt="Logo" width="420" height="400" align="right">
+  <img src="https://github.com/user-attachments/assets/a01eaadd-b1ca-4276-bcd3-ac3d2b5dc235" alt="Logo" width="450" height="300" align="right">
 </p>
-
-
 
 #  Stroke Prediction using Machine Learning
 
-##  Project Overview
-
+**Welcome to Stroke Prediction Project !**  
 The project is based on the Stroke Prediction Dataset from Kaggle.
 The database includes medical, demographic, and behavioral information on approximately 5,110 patients, and records whether each patient has had a stroke (stroke = 1) or not.
 The database includes variables such as: age, sex, blood pressure, heart disease, blood glucose level, BMI, smoking status, marital status, residential area, and type of work.
