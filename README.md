@@ -6,7 +6,7 @@
 #  Stroke Prediction using Machine Learning
 
 **Welcome to Stroke Prediction Project !**  
-The project is based on the Stroke Prediction Dataset from Kaggle.
+The project is based on the Stroke Prediction Dataset from Kaggle.  
 https://www.kaggle.com/datasets/fedesoriano/stroke-prediction-dataset
 
 ## Database:
