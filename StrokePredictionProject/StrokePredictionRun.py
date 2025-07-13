@@ -41,7 +41,7 @@ dataset = pd.read_csv('healthcare-dataset-stroke-data.csv')
 
 
 # REMOVE ID column -it's just an identifier and does not contribute to prediction(all other columns would shift left in index position)
-dataset = pd.read_csv('healthcare-dataset-stroke-data.csv')
+# dataset = pd.read_csv('healthcare-dataset-stroke-data.csv')
 dataset.drop('id', axis=1, inplace=True)
 
 
@@ -87,13 +87,11 @@ y = dataset.iloc[:, -1]
 model = ExtraTreesClassifier()
 model.fit(x, y)
 # Print the importance of each column by its order
-print(model.feature_importances_)
+print(model.feature_importances_/model.feature_importances_.sum())
 # Do a pie model of size 10 of the most to the least importance from the columns dataset
 feat_importances = pd.Series(model.feature_importances_, index=x.columns)
 feat_importances.nlargest(10).plot(kind='pie')
 plt.show()
-
-
 ######## Diagram Heart Disease
 
 # קיבוץ לפי מחלת לב ושבץ מוחי
@@ -186,6 +184,8 @@ print(percent)
 
 # Using the important columns form the pie shown and reference it to the stroke column
 x = dataset[['avg_glucose_level', 'smoking_status', 'work_type', 'bmi', 'age']]
+## # Uncomment the next line to use PCA for dimensionality reduction instead of the original features
+# x = PCA(n_components=3).fit_transform(x)
 y = dataset['stroke']
 
 # Splitting data into training and testing data
@@ -253,9 +253,9 @@ temp.sort_values(by=["Accuracy"], ascending=False, inplace=True)
 
 # Plot accuracy for different models
 plt.figure(figsize=(18, 4))
-ACC = sns.barplot(y=temp.index, x=temp["Accuracy"], label="Accuracy", edgecolor="black", linewidth=3, orient="h",
+ACC = sns.barplot(y=temp.index, x=temp["Accuracy"].array, edgecolor="black", linewidth=3, orient="h",
                   palette="Set2")
-plt.ylabel("Accuracy (%)")
+plt.ylabel("Model")
 plt.title("Algorithms Accuracy Comparison")
 plt.xlim(80, 98)
 
@@ -267,10 +267,10 @@ for w in ['right', 'top', 'bottom']:
 k = 0
 for ACC in ACC.patches:
     width = ACC.get_width()
-    plt.text(width + 0.1, (ACC.get_y() + ACC.get_height() - 0.3), s="{}%".format(temp["Accuracy"][k]),
+    plt.text(width + 0.1, (ACC.get_y() + ACC.get_height() - 0.3), s="{}%".format(round(temp["Accuracy"][k],2)),
              fontname='monospace', fontsize=11, color='black')
     k += 1
 
-plt.legend(loc="lower right")
+# plt.legend(loc="lower right")
 plt.tight_layout()
 plt.show()
