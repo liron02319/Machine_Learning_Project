@@ -1,4 +1,3 @@
-<img width="302" height="105" alt="image" src="https://github.com/user-attachments/assets/553e0866-df9f-4365-a5d6-ec0eeb684b93" />
 <p align="center">
   <img src="https://github.com/user-attachments/assets/b75b57c0-b66c-45d9-845b-130f274ca06f" alt="Logo" width="350" height="300" align="right">
 </p>
@@ -19,9 +18,11 @@ In order to predict the likelihood of a stroke.
 The task is to classify patients according to their risk of stroke using various machine learning algorithms, while analyzing the data, comparing the accuracy of the models, and testing additional techniques such as dimensionality reduction.
 
 
+
 ## Team Members:
 * Liron Cohen   
 * Omer Apter
+
 
 ## Algorithms:
 
