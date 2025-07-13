@@ -1,3 +1,10 @@
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/a01eaadd-b1ca-4276-bcd3-ac3d2b5dc235" alt="Logo" width="420" height="400" align="right">
+</p>
+
+
+
 #  Stroke Prediction using Machine Learning
 
 ##  Project Overview
@@ -10,3 +17,5 @@ In order to predict the likelihood of a stroke.
 The task is to classify patients according to their risk of stroke using various machine learning algorithms, while analyzing the data, comparing the accuracy of the models, and testing additional techniques such as dimensionality reduction.
 
 https://www.kaggle.com/datasets/fedesoriano/stroke-prediction-dataset
+
+<img width="1146" height="440" alt="image" src="https://github.com/user-attachments/assets/6a4c8f7b-4f0e-4e2a-a458-2b06ae009f1d" />
