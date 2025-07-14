@@ -217,7 +217,7 @@ y = dataset['stroke']
 # Splitting data into training and testing data
 X_train, X_test, Y_train, Y_test = train_test_split(x, y, test_size=0.2, random_state=state_random)
 
-plot_pca_explained_var(X_train)
+# plot_pca_explained_var(X_train)
 
 # Logistic Regression
 model_Logistic = LogisticRegression(random_state=state_random)
