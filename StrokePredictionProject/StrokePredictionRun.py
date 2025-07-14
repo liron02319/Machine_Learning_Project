@@ -32,6 +32,7 @@ from sklearn.svm import SVC
 
 
 
+state_random = 692  # Set a random state for reproducibility
 
 # Suppress all warnings
 warnings.filterwarnings("ignore")
@@ -79,94 +80,119 @@ pd.set_option('display.float_format', lambda i: '%.2f' % i)
 plt.rcParams['figure.figsize'] = 10, 3
 sns.set_style("darkgrid")
 
-# Show width
-x = dataset.iloc[:, :-1]
-y = dataset.iloc[:, -1]
+def plot_column_importance(dataset_in):
+    # Checking the importance of each column with ExtraTreesClassifier
+    x = dataset_in.iloc[:, :-1]
+    y = dataset_in.iloc[:, -1]
+    # Checking the importance of each column with ExtraTreesClassifier
+    model = ExtraTreesClassifier()
+    model.fit(x, y)
+    # Print the importance of each column by its order
+    print(model.feature_importances_/model.feature_importances_.sum())
+    # Do a pie model of size 10 of the most to the least importance from the columns dataset
+    feat_importances = pd.Series(model.feature_importances_, index=x.columns)
+    feat_importances.nlargest(10).plot(kind='pie')
+    plt.show()
 
-# Checking the importance of each column with ExtraTreesClassifier
-model = ExtraTreesClassifier()
-model.fit(x, y)
-# Print the importance of each column by its order
-print(model.feature_importances_/model.feature_importances_.sum())
-# Do a pie model of size 10 of the most to the least importance from the columns dataset
-feat_importances = pd.Series(model.feature_importances_, index=x.columns)
-feat_importances.nlargest(10).plot(kind='pie')
-plt.show()
+
 ######## Diagram Heart Disease
+def plot_heart_disease(dataset_in):
+    # קיבוץ לפי מחלת לב ושבץ מוחי
+    grouped = dataset_in.groupby(['heart_disease', 'stroke']).size().unstack(fill_value=0)
 
-# קיבוץ לפי מחלת לב ושבץ מוחי
-grouped = dataset.groupby(['heart_disease', 'stroke']).size().unstack(fill_value=0)
+    # שינוי שמות לעברית
+    grouped.index = ['No Heart Disease', 'Yes Heart Disease']
+    grouped.columns = ['No', 'Yes']
 
-# שינוי שמות לעברית
-grouped.index = ['No Heart Disease', 'Yes Heart Disease']
-grouped.columns = ['No', 'Yes']
+    # ציור הגרף
+    ax = grouped.plot(kind='bar', figsize=(8, 6), color=['skyblue', 'salmon'])
 
-# ציור הגרף
-ax = grouped.plot(kind='bar', figsize=(8, 6), color=['skyblue', 'salmon'])
+    # הוספת כותרות
+    plt.title('Status: Heart Disease Of The Patients:')
+    plt.ylabel('Number Of Patients')
+    plt.xticks(rotation=0)
+    plt.legend(title='Status - Stroke')
+    plt.grid(axis='y')
+    plt.tight_layout()
 
-# הוספת כותרות
-plt.title('Status: Heart Disease Of The Patients:')
-plt.ylabel('Number Of Patients')
-plt.xticks(rotation=0)
-plt.legend(title='Status - Stroke')
-plt.grid(axis='y')
-plt.tight_layout()
+    # הוספת המספרים מעל כל עמודה
+    for container in ax.containers:
+        for bar in container:
+            height = bar.get_height()
+            ax.annotate(f'{int(height)}',
+                        xy=(bar.get_x() + bar.get_width() / 2, height),
+                        xytext=(0, 3),  # מרווח אנכי
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontsize=9)
 
-# הוספת המספרים מעל כל עמודה
-for container in ax.containers:
-    for bar in container:
-        height = bar.get_height()
-        ax.annotate(f'{int(height)}',
-                    xy=(bar.get_x() + bar.get_width() / 2, height),
-                    xytext=(0, 3),  # מרווח אנכי
-                    textcoords="offset points",
-                    ha='center', va='bottom', fontsize=9)
+    plt.show()
 
-plt.show()
+    # ננקה את ערכי ה-None בעמודת bmi (כי היא לא רלוונטית פה)
+    dataset_in['bmi'] = pd.to_numeric(dataset_in['bmi'], errors='coerce')
+    dataset_in.dropna(subset=['bmi'], inplace=True)
 
-# ננקה את ערכי ה-None בעמודת bmi (כי היא לא רלוונטית פה)
-dataset['bmi'] = pd.to_numeric(dataset['bmi'], errors='coerce')
-dataset.dropna(subset=['bmi'], inplace=True)
+    # נספור כמה בכל קבוצה
+    group = dataset_in.groupby(['heart_disease', 'stroke']).size().unstack(fill_value=0)
 
-# נספור כמה בכל קבוצה
-group = dataset.groupby(['heart_disease', 'stroke']).size().unstack(fill_value=0)
-
-# אחוז שבץ אצל כל קבוצה
-percent = (group[1] / (group[0] + group[1])) * 100
-print(percent)
+    # אחוז שבץ אצל כל קבוצה
+    percent = (group[1] / (group[0] + group[1])) * 100
+    print(percent)
 
 
 ######## Diagram Hypertention
+def plot_hypertension(dataset_in):
+    # קיבוץ לפי לחץ דם גבוה ושבץ מוחי
+    grouped = dataset_in.groupby(['hypertension', 'stroke']).size().unstack(fill_value=0)
 
-# קיבוץ לפי לחץ דם גבוה ושבץ מוחי
-grouped = dataset.groupby(['hypertension', 'stroke']).size().unstack(fill_value=0)
+    # שינוי שמות לעברית
+    grouped.index = ['No Hypertension', 'Yes Hypertension']
+    grouped.columns = ['No', 'Yes']
 
-# שינוי שמות לעברית
-grouped.index = ['No Hypertension', 'Yes Hypertension']
-grouped.columns = ['No', 'Yes']
+    # ציור הגרף
+    ax = grouped.plot(kind='bar', figsize=(8, 6), color=['skyblue', 'salmon'])
 
-# ציור הגרף
-ax = grouped.plot(kind='bar', figsize=(8, 6), color=['skyblue', 'salmon'])
+    # הוספת כותרות
+    plt.title('Status: Hypertension Of The Patients:')
+    plt.ylabel('Number Of Patients')
+    plt.xticks(rotation=0)
+    plt.legend(title='Status - Stroke')
+    plt.grid(axis='y')
+    plt.tight_layout()
 
-# הוספת כותרות
-plt.title('Status: Hypertension Of The Patients:')
-plt.ylabel('Number Of Patients')
-plt.xticks(rotation=0)
-plt.legend(title='Status - Stroke')
-plt.grid(axis='y')
-plt.tight_layout()
+    # הוספת המספרים מעל כל עמודה
+    for container in ax.containers:
+        for bar in container:
+            height = bar.get_height()
+            ax.annotate(f'{int(height)}',
+                        xy=(bar.get_x() + bar.get_width() / 2, height),
+                        xytext=(0, 3),
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontsize=9)
 
-# הוספת המספרים מעל כל עמודה
-for container in ax.containers:
-    for bar in container:
-        height = bar.get_height()
-        ax.annotate(f'{int(height)}',
-                    xy=(bar.get_x() + bar.get_width() / 2, height),
-                    xytext=(0, 3),
-                    textcoords="offset points",
-                    ha='center', va='bottom', fontsize=9)
+    plt.show()
 
-plt.show()
+def plot_pca_explained_var(x):
+    # Dimension reduction
+    # Create scaler
+    scaler = StandardScaler()
+    # Create a PCA instance
+    pca = PCA()
+    # Create pipeline
+    pipeline = make_pipeline(scaler, pca)
+    # Fit the pipeline to samples
+    pipeline.fit(x)
+    # Plot the explained variances
+    features = range(pca.n_components_)
+    plt.bar(features, pca.explained_variance_)
+    plt.xlabel('PCA feature')
+    plt.ylabel('variance')
+    plt.xticks(features)
+    plt.show()
+
+# Uncomment the next lines to plot the column importance, heart disease, and hypertension diagrams
+# plot_column_importance(dataset)
+# plot_heart_disease(dataset)
+# plot_hypertension(dataset)
 
 # ננקה את ערכי ה-None בעמודת bmi (כי היא לא רלוונטית פה)
 dataset['bmi'] = pd.to_numeric(dataset['bmi'], errors='coerce')
@@ -184,32 +210,17 @@ print(percent)
 
 # Using the important columns form the pie shown and reference it to the stroke column
 x = dataset[['avg_glucose_level', 'smoking_status', 'work_type', 'bmi', 'age']]
-## # Uncomment the next line to use PCA for dimensionality reduction instead of the original features
+# Uncomment the next line to use PCA for dimensionality reduction instead of the original features
 # x = PCA(n_components=3).fit_transform(x)
 y = dataset['stroke']
 
 # Splitting data into training and testing data
-X_train, X_test, Y_train, Y_test = train_test_split(x, y, test_size=0.2, random_state=65)
+X_train, X_test, Y_train, Y_test = train_test_split(x, y, test_size=0.2, random_state=state_random)
 
-# Dimension reduction
-# Create scaler
-scaler = StandardScaler()
-# Create a PCA instance
-pca = PCA()
-# Create pipeline
-pipeline = make_pipeline(scaler, pca)
-# Fit the pipeline to samples
-pipeline.fit(X_train)
-# Plot the explained variances
-features = range(pca.n_components_)
-plt.bar(features, pca.explained_variance_)
-plt.xlabel('PCA feature')
-plt.ylabel('variance')
-plt.xticks(features)
-plt.show()
+plot_pca_explained_var(X_train)
 
 # Logistic Regression
-model_Logistic = LogisticRegression(random_state=1)
+model_Logistic = LogisticRegression(random_state=state_random)
 model_Logistic.fit(X_train, Y_train)
 Y_pred = model_Logistic.predict(X_test)
 model_Logistic_accuracy = round(accuracy_score(Y_test, Y_pred), 4) * 100  # Accuracy
@@ -221,13 +232,13 @@ Y_pred = model_KNN.predict(X_test)
 model_KNN_accuracy = round(accuracy_score(Y_test, Y_pred), 4) * 100  # Accuracy
 
 # Decision Tree
-model_tree = DecisionTreeClassifier(random_state=10, criterion="gini", max_depth=100)
+model_tree = DecisionTreeClassifier(random_state=state_random, criterion="gini", max_depth=100)
 model_tree.fit(X_train, Y_train)
 Y_pred = model_tree.predict(X_test)
 model_tree_accuracy = round(accuracy_score(Y_test, Y_pred), 4) * 100  # Accuracy
 
 # Adaboost
-model_adaboost = AdaBoostClassifier(n_estimators=50, learning_rate=1, random_state=0)
+model_adaboost = AdaBoostClassifier(n_estimators=50, learning_rate=1, random_state=state_random)
 model_adaboost.fit(X_train, Y_train)
 Y_pred = model_adaboost.predict(X_test)
 Adaboost_accuracy = round(accuracy_score(Y_test, Y_pred), 4) * 100  # Accuracy
@@ -257,7 +268,7 @@ ACC = sns.barplot(y=temp.index, x=temp["Accuracy"].array, edgecolor="black", lin
                   palette="Set2")
 plt.ylabel("Model")
 plt.title("Algorithms Accuracy Comparison")
-plt.xlim(80, 98)
+plt.xlim(80, 100)
 
 ACC.spines['left'].set_linewidth(3)
 for w in ['right', 'top', 'bottom']:
@@ -272,5 +283,5 @@ for ACC in ACC.patches:
     k += 1
 
 # plt.legend(loc="lower right")
-plt.tight_layout()
+plt.tight_layout(pad=1.0)
 plt.show()
