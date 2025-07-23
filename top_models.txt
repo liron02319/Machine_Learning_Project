@@ -1,0 +1,13 @@
+                  Model  accuracy  precision  ...  oversampling  overunderSampling  undersampling
+27             Adaboost  0.927332   0.232352  ...          True              False          False
+14  Logistic Regression  0.744399   0.130742  ...         False              False          False
+39  Logistic Regression  0.762729   0.128405  ...          True              False          False
+18                  SVM  0.731161   0.125000  ...         False              False          False
+59  Logistic Regression  0.743992   0.124252  ...         False              False           True
+26        Decision Tree  0.923921   0.190886  ...          True              False          False
+54  Logistic Regression  0.783096   0.125557  ...         False              False           True
+49  Logistic Regression  0.743177   0.119335  ...         False              False           True
+25                  KNN  0.792261   0.121495  ...          True              False          False
+3                   SVM  0.732179   0.114983  ...         False              False          False
+
+[10 rows x 10 columns]
