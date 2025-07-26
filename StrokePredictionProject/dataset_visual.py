@@ -1,3 +1,4 @@
+from matplotlib.patches import Patch
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -17,12 +18,12 @@ dataset = pd.read_csv("healthcare-dataset-stroke-data.csv")
 
 # REMOVE ID column -it's just an identifier and does not contribute to prediction(all other columns would shift left in index position)
 # dataset = pd.read_csv('healthcare-dataset-stroke-data.csv')
-dataset.drop("id", axis=1, inplace=True)
+# dataset.drop("id", axis=1, inplace=True)
 
 dataset["bmi"] = pd.to_numeric(dataset["bmi"], errors="coerce")
-# dataset["bmi"].fillna(0, inplace=True)  
-# Or use mean: 
-dataset['bmi'].fillna(dataset['bmi'].mean(), inplace=True)
+# dataset["bmi"].fillna(0, inplace=True)
+# Or use mean:
+dataset["bmi"].fillna(dataset["bmi"].mean(), inplace=True)
 
 
 dataset["gender"].replace(["Female"], 1, inplace=True)
@@ -80,6 +81,7 @@ def plot_stroke_distribution(dataset_in):
     plt.tight_layout()
     plt.show()
 
+
 def plot_pca_explained_var(x):
     # Dimension reduction
     # Create scaler
@@ -96,6 +98,114 @@ def plot_pca_explained_var(x):
     plt.xlabel("PCA feature")
     plt.ylabel("variance")
     plt.xticks(features)
+    plt.show()
+
+
+def plot_bmi_distribution(df: pd.DataFrame):
+    column = "bmi"
+    fig = plt.figure(figsize=(12, 6))
+    ax1 = fig.add_subplot(111)
+    sns.kdeplot(
+        data=df[df["stroke"] == 0],
+        x=column,
+        ax=ax1,
+        shade=True,
+        alpha=1,
+        color="salmon",
+    )
+    kax = sns.kdeplot(
+        data=df[df["stroke"] == 1],
+        x=column,
+        ax=ax1,
+        shade=True,
+        alpha=0.8,
+        color="skyblue",
+    )
+    kax.legend(
+        ["False", "True"],
+        loc="upper right",
+        fontsize=12,
+        title="Stroke Status",
+        title_fontsize=14,
+        framealpha=0.8,
+        facecolor="white",
+    )
+    kax.set_xlabel(column.capitalize(), fontsize=12, labelpad=2)
+    kax.set_ylabel("Density", fontsize=12, labelpad=2)
+    kax.set_title("Bmi Distribution by Stroke amount", fontsize=16, pad=10)
+    plt.tight_layout(pad=2)
+    plt.show()
+
+
+def plot_age_distribution(df: pd.DataFrame):
+    column = "age"
+    fig = plt.figure(figsize=(12, 6))
+    ax1 = fig.add_subplot(111)
+    sns.kdeplot(
+        data=df[df["stroke"] == 0],
+        x=column,
+        ax=ax1,
+        shade=True,
+        alpha=1,
+        color="salmon",
+    )
+    kax = sns.kdeplot(
+        data=df[df["stroke"] == 1],
+        x=column,
+        ax=ax1,
+        shade=True,
+        alpha=0.8,
+        color="skyblue",
+    )
+    kax.legend(
+        ["False", "True"],
+        loc="upper right",
+        fontsize=12,
+        title="Stroke Status",
+        title_fontsize=14,
+        framealpha=0.8,
+        facecolor="white",
+    )
+    kax.set_xlabel("Age", fontsize=12, labelpad=2)
+    kax.set_ylabel("Density", fontsize=12, labelpad=2)
+    kax.set_title("Age Distribution by Stroke amount", fontsize=16, pad=10)
+    plt.tight_layout(pad=2)
+    plt.show()
+
+
+def plot_glucose_distribution(df: pd.DataFrame):
+    column = "avg_glucose_level"
+    fig = plt.figure("glucose_distiribution", figsize=(12, 6))
+    ax1 = fig.add_subplot(111)
+    sns.kdeplot(
+        data=df[df["stroke"] == 0],
+        x=column,
+        ax=ax1,
+        shade=True,
+        alpha=1,
+        color="salmon",
+    )
+    kax = sns.kdeplot(
+        data=df[df["stroke"] == 1],
+        x=column,
+        ax=ax1,
+        shade=True,
+        alpha=0.8,
+        color="skyblue",
+    )
+    kax.legend(
+        ["False", "True"],
+        loc="upper right",
+        fontsize=12,
+        title="Stroke Status",
+        title_fontsize=14,
+        framealpha=0.8,
+        facecolor="white",
+    )
+    kax.set_xlabel("Average glucose level", fontsize=12, labelpad=2)
+    kax.set_ylabel("Density", fontsize=12, labelpad=2)
+    kax.set_title("Glucose level Distribution by Stroke amount", fontsize=16, pad=10)
+    plt.tight_layout(pad=2)
     plt.show()
 
 
@@ -188,98 +298,140 @@ def plot_hypertension(dataset_in):
     plt.show()
 
 
-def top_n_models(scores_df:pd.DataFrame, n=5, sort_by="accuracy"):
+def top_n_models(scores_df: pd.DataFrame, n=5, by="accuracy"):
     """Display a table of the top n models and their scores."""
-    top_models = scores_df.sort_values(by=sort_by, ascending=False).head(n)
-    top_models = top_models.round(3) # Round the scores to 2 decimal places
+    top_models = scores_df.sort_values(by=by, ascending=False).head(n)
+    top_models = top_models.round(3)  # Round the scores to 2 decimal places
     return top_models
 
 
-def plot_models_table(model_df: pd.DataFrame):
-    """Plot the top models dataframe as a table, coloring best and 2nd best in each float column."""
+def plot_models_table(
+    model_df: pd.DataFrame,
+    with_index: bool = False,
+    index_name: str = "Index",
+    title: str = "",
+):
+    """Plot the top models dataframe as a beautiful table, coloring best and 2nd best in each float column."""
     import matplotlib.colors as mcolors
 
-    fig, ax = plt.subplots(
-        figsize=(min(12, 2 + model_df.shape[0]), 0.6 + 0.4 * model_df.shape[0])
-    )
-    ax.axis("off")
+    # Use two colors from the same palette for best and 2nd best
+    blues = sns.color_palette("Greens", 8)
+    color_default = "#e6f1fd"
+    color_best = mcolors.to_hex(blues[4])
+    color_2ndBest = mcolors.to_hex(blues[1])
+    color_header = "#d2e6fa"
 
     # Prepare cell colors
-    cell_colors = [["white"] * model_df.shape[1] for _ in range(model_df.shape[0])]
-    float_cols = model_df.select_dtypes(include=['float', 'float64']).columns
+    n_rows, n_cols = model_df.shape
+    cell_colors = []
+    for i in range(n_rows):
+        row_color = color_default
+        cell_colors.append([row_color] * n_cols)
+
+    float_cols = model_df.select_dtypes(include=["float", "float64"]).columns
 
     for col_idx, col in enumerate(model_df.columns):
         if col in float_cols:
             col_values = model_df[col].values
-            # Get sorted indices (descending)
             sorted_idx = np.argsort(-col_values)
             if len(sorted_idx) > 0:
-                cell_colors[sorted_idx[0]][col_idx] = "#90ee90"  # light green for best
+                cell_colors[sorted_idx[0]][col_idx] = color_best
             if len(sorted_idx) > 1:
-                cell_colors[sorted_idx[1]][col_idx] = "#add8e6"  # light blue for 2nd best
+                cell_colors[sorted_idx[1]][col_idx] = color_2ndBest
 
+    if with_index:
+        for i, row in enumerate(cell_colors):
+            row.insert(0, color_default)
+        cellText = np.column_stack(
+            [model_df.index.astype(str), model_df.values.astype(str)]
+        )
+        colLabels = [index_name] + list(model_df.columns)
+        header_colors = [color_header] * (n_cols + 1)
+    else:
+        cellText = model_df.values.astype(str)
+        colLabels = list(model_df.columns)
+        header_colors = [color_header] * n_cols
+
+    fig, ax = plt.subplots(
+        figsize=(
+            min(14, 2 + model_df.shape[1] + (with_index)),
+            0.8 + 0.5 * (model_df.shape[0] + (with_index)),
+        )
+    )
+    ax = fig.axes[0]
+    ax.axis("off")
+    # Add table
     table = ax.table(
-        cellText=model_df.values.astype(str),
-        colLabels=model_df.columns,
+        cellText=cellText,
+        colLabels=colLabels,
         loc="center",
         cellLoc="center",
         cellColours=cell_colors,
+        colColours=header_colors,
+        rowLoc="center",
+        colLoc="center",
     )
     table.auto_set_font_size(False)
-    table.set_fontsize(10)
-    table.auto_set_column_width(col=list(range(len(model_df.columns))))
+    table.set_fontsize(16)
+    table.auto_set_column_width(col=list(range(len(colLabels))))
+
+    # Beautify header
+    for key, cell in table.get_celld().items():
+        row, col = key
+        if row == 0 or col == 0:
+            cell.set_text_props(weight="bold", color="#222")
+            cell.set_edgecolor("black")
+            cell.set_linewidth(1.5)
+        else:
+            cell.set_edgecolor("black")
+            cell.set_linewidth(1.5)
+        cell.set_height(0.1)
+    fig.suptitle(
+        title,
+        fontsize=20,
+        fontweight="semibold",
+        fontstyle="italic",
+        y=0.98, # Adjust vertical position if needed
+    )
     plt.tight_layout()
     plt.show()
 
-
-def plot_stroke_distribution_table(dataset_in:pd.DataFrame):
-    """Display the distribution of stroke cases as a table with percentage using matplotlib."""
-    stroke_counts = dataset_in["stroke"].value_counts()
-    total = stroke_counts.sum()
-    percent = (stroke_counts / total * 100).round(2)
-    percent = " (" + percent.astype(str) + "%)"
-    stroke_counts = stroke_counts.astype(str) + percent
-    table_df = pd.DataFrame({
-        "Count": stroke_counts,
-    })
-    table_df.index = ["No Stroke", "Stroke"]
-    fig, ax = plt.subplots(figsize=(5, 3))
-    ax.axis('off')
-    table = ax.table(
-        cellText=table_df.values,
-        colLabels=table_df.columns,
-        rowLabels=table_df.index,
-        loc='center',
-        cellLoc='center'
-    )
-    table.auto_set_font_size(False)
-    table.set_fontsize(12)
-    table.auto_set_column_width(col=list(range(len(table_df.columns))))
-    table.scale(1.2, 1.2)
-    plt.title("Stroke Distribution in Dataset")
-    plt.tight_layout()
-    plt.show()
-    return table_df
-
-# Example
 
 sns.set_theme(style="ticks")
 
 scores_df = pd.read_csv("scores.csv")
 
-boolean_cols = ['PCA', 'PickBest', 'OverSampling', 'OverUnderSampling', 'UnderSampling', 'oversampling', 'overunderSampling', 'undersampling']
+boolean_cols = ["PCA", "PickBest", "OverSampling", "OverUnderSampling", "UnderSampling"]
+boolean_cols_woPCA = ["PickBest", "OverSampling", "OverUnderSampling", "UnderSampling"]
+boolean_cols_woOverSamp = ["PCA","PickBest", "OverUnderSampling", "UnderSampling"]
+score_metrics = ["recall", "f1", "precision", "accuracy"]
+
 existing_booleans = [col for col in boolean_cols if col in scores_df.columns]
-other_cols = [col for col in scores_df.columns if col not in (['Model'] + existing_booleans)]
-ordered_cols = ['Model'] + existing_booleans + other_cols
+other_cols = [
+    col for col in scores_df.columns if col not in (["Model"] + existing_booleans)
+]
+ordered_cols = ["Model"] + existing_booleans + other_cols
 scores_df = scores_df[ordered_cols]
 
+#
+# top = top_n_models(scores_df, n=30, by=score_metrics)
+df_pca_comp = (
+    scores_df
+    .drop(labels=boolean_cols_woOverSamp, axis=1)
+    .sort_values(["recall","f1"], ascending=False)
+    .groupby(['Model',"OverSampling"])
+    .head(n=1)
+    # .drop(labels=['Model'],axis=1)
+    .round(3)
+    .sort_values("Model",ascending=False)
+)
+df_pca_comp["OverSampling"].replace([True], 'With', inplace=True)
+df_pca_comp["OverSampling"].replace([False], 'Without', inplace=True)
 
-top = top_n_models(scores_df, n=10, sort_by=["recall","f1", "precision","accuracy"])
-plot_stroke_distribution_table(dataset_in=dataset)
-# plot_models_table(top)
-
+df = scores_df.drop(labels=boolean_cols, axis=1).sort_values("f1", ascending=False)
+df = df.groupby("Model").head(1).round(3)
+# plot_glucose_distribution(df=dataset)
+plot_models_table(df_pca_comp, False, "Model","Comparing impact of OverSampling on each model")
 
 # # plt.figure(figsize=(12, 6))
 # plot_stroke_distribution(dataset)
-
-# %%

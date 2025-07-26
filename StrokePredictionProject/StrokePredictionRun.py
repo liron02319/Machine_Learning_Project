@@ -66,24 +66,6 @@ def get_n_important_features(x, y, n=10):
     feat_importances = pd.Series(model.feature_importances_, index=x.columns)
     return feat_importances.nlargest(n).index.tolist()
 
-# Uncomment the next lines to plot the column importance, heart disease, and hypertension diagrams
-# plot_column_importance(dataset)
-# plot_heart_disease(dataset)
-# plot_hypertension(dataset)
-
-# ננקה את ערכי ה-None בעמודת bmi (כי היא לא רלוונטית פה)
-# dataset['bmi'] = pd.to_numeric(dataset['bmi'], errors='coerce')
-# dataset.dropna(subset=['bmi'], inplace=True)
-
-# # נספור כמה בכל קבוצה
-# group = dataset.groupby(['hypertension', 'stroke']).size().unstack(fill_value=0)
-
-# # אחוז שבץ אצל כל קבוצה
-# percent = (group[1] / (group[0] + group[1])) * 100
-# print(percent)
-
-###
-
 
 def run_experiments_gen(
     models, metrics, split_iterations: 1, iterations: 10, data_x, data_y
@@ -108,9 +90,9 @@ def run_experiments_gen(
         X_train, X_test, Y_train, Y_test = train_test_split(
             data_x, data_y, test_size=0.2, stratify=data_y
         )
-
-        smote = SMOTE()
-        X_train, Y_train = smote.fit_resample(X_train, Y_train)
+        if(variations["OverSampling"]):
+            smote = SMOTE() 
+            X_train, Y_train = smote.fit_resample(X_train, Y_train)
 
         for i in range(iterations):
             print(f"iteration {split+1}/{split_iterations} - run {i+1}/{iterations}")
@@ -247,28 +229,31 @@ Y = dataset["stroke"]
 X = dataset.drop(columns=["stroke"])
 
 variations = {
-    "PCA":False,  # Set to True if you want to use PCA
+    "PCA":True,  # Set to True if you want to use PCA
     "PickBest": True,  # Set to True if you want to use the 10 best features
     "OverSampling": True,  # Set to True if you want to use SMOTE
     "OverUnderSampling": False,  # Set to True if you want to use SMOTEENN
     "UnderSampling": False,  # Set to True if you want to use RandomUnderSampler
 }
 
-# imp = ["avg_glucose_level", "bmi", "age","hypertension","heart_disease"]
-imp = get_n_important_features(X, Y, 10)  # Get the 10 most important features
-X = dataset[imp]
+if variations["PickBest"]:
+    # imp = ["avg_glucose_level", "bmi", "age","hypertension","heart_disease"]
+    imp = get_n_important_features(X, Y, 10)  # Get the 10 most important features
+    X = dataset[imp]
+    
 
-# pca_pipeline = make_pipeline(StandardScaler(),PCA(n_components=3))
-# X = pd.DataFrame(pca_pipeline.fit_transform(X))
+if variations['PCA']:
+    pca_pipeline = make_pipeline(StandardScaler(),PCA(n_components=3))
+    X = pd.DataFrame(pca_pipeline.fit_transform(X))
 
-scores = run_experiments_gen(models, metrics_used, 5, 10, X, Y)
+scores = run_experiments_gen(models, metrics_used, 10, 5, X, Y)
 scores_df = pd.DataFrame(scores).T # Transpose to have models as rows
 scores_df.index.name = 'Model'
 
 for key, value in variations.items():
     scores_df[key] = value  # Set the index name to 'Model'
 
-scores_df.to_csv("PCA-overundersampling.csv", mode="w", header=True, index=True)
+scores_df.to_csv("Results.csv", mode="w", header=True, index=True)
 # Make a list with the accuracies items
 # acc_list = accuracies.items()
 """
