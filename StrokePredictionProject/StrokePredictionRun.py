@@ -34,7 +34,10 @@ from imblearn.over_sampling import SMOTE
 from imblearn.combine import SMOTEENN
 
 
-state_random = 692  # Set a random state for reproducibility
+randomStates = np.array(
+    [42, 69, 51, 11, 81, 955, 339, 647, 584, 12,44,231,84,36,45,97,12,54,74,5421]
+)  # Set a random states for reproducibility of experiments
+rndstate_of_model = 42
 
 # Suppress all warnings
 warnings.filterwarnings("ignore")
@@ -46,7 +49,6 @@ dataset = pd.read_csv("healthcare-dataset-stroke-data.csv")
 # REMOVE ID column -it's just an identifier and does not contribute to prediction(all other columns would shift left in index position)
 # dataset = pd.read_csv('healthcare-dataset-stroke-data.csv')
 dataset.drop("id", axis=1, inplace=True)
-
 
 
 # ...existing code...
@@ -68,7 +70,7 @@ def get_n_important_features(x, y, n=10):
 
 
 def run_experiments_gen(
-    models, metrics, split_iterations: 1, iterations: 10, data_x, data_y
+    models:dict, metrics, split_iterations: 1, iterations: 10, data_x, data_y
 ):
     """Run experiments with different models and return their accuracies.
     Args:
@@ -88,11 +90,18 @@ def run_experiments_gen(
     for split in range(split_iterations):
         # Splitting data into training and testing data
         X_train, X_test, Y_train, Y_test = train_test_split(
-            data_x, data_y, test_size=0.2, stratify=data_y
+            data_x,
+            data_y,
+            test_size=0.2,
+            stratify=data_y,
+            random_state=randomStates[split],
         )
-        if(variations["OverSampling"]):
-            smote = SMOTE() 
+        if variations["OverSampling"]:
+            smote = SMOTE(random_state=randomStates[split])
             X_train, Y_train = smote.fit_resample(X_train, Y_train)
+        elif variations["OverUnderSampling"]:
+            smoteenn = SMOTEENN(random_state=randomStates[split])
+            X_train, Y_train = smoteenn.fit_resample(X_train, Y_train)
 
         for i in range(iterations):
             print(f"iteration {split+1}/{split_iterations} - run {i+1}/{iterations}")
@@ -185,9 +194,10 @@ models = {
     "Adaboost": AdaBoostClassifier(
         DecisionTreeClassifier(class_weight="balanced", max_depth=5),
         n_estimators=100,
-        learning_rate=1,random_state=state_random
+        learning_rate=1,
+        random_state=rndstate_of_model,
     ),
-    "SVM": SVC(C=1, kernel="rbf", degree=3, class_weight="balanced"),
+    "SVM": SVC(C=100, kernel="rbf", degree=3, class_weight="balanced"),
 }
 
 
@@ -203,9 +213,8 @@ metrics_used = {
 dataset["bmi"] = pd.to_numeric(dataset["bmi"], errors="coerce")
 # dataset['bmi'].fillna(0, inplace=True)
 # Or use mean:
-dataset['bmi'].fillna(dataset['bmi'].median(), inplace=True)
+dataset["bmi"].fillna(dataset["bmi"].median(), inplace=True)
 # dataset.dropna(inplace=True)
-
 # Identify categorical columns
 categorical_cols = [
     "gender",
@@ -215,7 +224,7 @@ categorical_cols = [
     "smoking_status",
 ]
 
-numeric_cols = ["age","avg_glucose_level", "bmi"]
+numeric_cols = ["age", "avg_glucose_level", "bmi"]
 scaler = MinMaxScaler()
 
 for col in numeric_cols:
@@ -229,26 +238,26 @@ Y = dataset["stroke"]
 X = dataset.drop(columns=["stroke"])
 
 variations = {
-    "PCA":True,  # Set to True if you want to use PCA
-    "PickBest": True,  # Set to True if you want to use the 10 best features
-    "OverSampling": True,  # Set to True if you want to use SMOTE
+    "PCA": True,  # Set to True if you want to use PCA
+    "PickBest": False,  # Set to True if you want to use the 10 best features
+    "OverSampling": False,  # Set to True if you want to use SMOTE
     "OverUnderSampling": False,  # Set to True if you want to use SMOTEENN
     "UnderSampling": False,  # Set to True if you want to use RandomUnderSampler
 }
 
 if variations["PickBest"]:
-    # imp = ["avg_glucose_level", "bmi", "age","hypertension","heart_disease"]
-    imp = get_n_important_features(X, Y, 10)  # Get the 10 most important features
+    imp = ["avg_glucose_level", "bmi", "age", "hypertension", "heart_disease"]
+    # imp = get_n_important_features(X, Y, 10)  # Get the 10 most important features
     X = dataset[imp]
-    
 
-if variations['PCA']:
-    pca_pipeline = make_pipeline(StandardScaler(),PCA(n_components=3))
+
+if variations["PCA"]:
+    pca_pipeline = make_pipeline(StandardScaler(), PCA())
     X = pd.DataFrame(pca_pipeline.fit_transform(X))
 
 scores = run_experiments_gen(models, metrics_used, 10, 5, X, Y)
-scores_df = pd.DataFrame(scores).T # Transpose to have models as rows
-scores_df.index.name = 'Model'
+scores_df = pd.DataFrame(scores).T  # Transpose to have models as rows
+scores_df.index.name = "Model"
 
 for key, value in variations.items():
     scores_df[key] = value  # Set the index name to 'Model'
@@ -263,4 +272,3 @@ v = np.round(a = v, decimals=2)  # Round the accuracies to 2 decimal places
 temp = pd.DataFrame(index=k, data=v)
 # temp.sort_values(by=["Accuracy"], ascending=False, inplace=True)
 """
-
