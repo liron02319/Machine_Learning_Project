@@ -14,6 +14,7 @@ Omer Apter
 ¥
 """
 
+import random as rnd
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -33,7 +34,7 @@ from sklearn.svm import SVC
 from imblearn.over_sampling import SMOTE
 from imblearn.combine import SMOTEENN
 
-
+gen = rnd.Random(69)
 randomStates = np.array(
     [42, 69, 51, 11, 81, 955, 339, 647, 584, 12,44,231,84,36,45,97,12,54,74,5421]
 )  # Set a random states for reproducibility of experiments
@@ -194,7 +195,6 @@ models = {
     "Adaboost": AdaBoostClassifier(
         DecisionTreeClassifier(class_weight="balanced", max_depth=5),
         n_estimators=100,
-        learning_rate=1,
         random_state=rndstate_of_model,
     ),
     "SVM": SVC(C=100, kernel="rbf", degree=3, class_weight="balanced"),
