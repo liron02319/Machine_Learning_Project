@@ -8,6 +8,7 @@ from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import StandardScaler
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import MinMaxScaler
 
 # Suppress all warnings
 warnings.filterwarnings("ignore")
@@ -17,35 +18,32 @@ dataset = pd.read_csv("healthcare-dataset-stroke-data.csv")
 
 
 # REMOVE ID column -it's just an identifier and does not contribute to prediction(all other columns would shift left in index position)
-# dataset = pd.read_csv('healthcare-dataset-stroke-data.csv')
-# dataset.drop("id", axis=1, inplace=True)
+dataset.drop("id", axis=1, inplace=True)
 
+# Replace all text into numbers
 dataset["bmi"] = pd.to_numeric(dataset["bmi"], errors="coerce")
-# dataset["bmi"].fillna(0, inplace=True)
+# dataset['bmi'].fillna(0, inplace=True)
 # Or use mean:
-dataset["bmi"].fillna(dataset["bmi"].mean(), inplace=True)
+dataset["bmi"].fillna(dataset["bmi"].median(), inplace=True)
+# dataset.dropna(inplace=True)
+# Identify categorical columns
+categorical_cols = [
+    "gender",
+    "ever_married",
+    "work_type",
+    "Residence_type",
+    "smoking_status",
+]
 
+numeric_cols = ["age", "avg_glucose_level", "bmi"]
+scaler = MinMaxScaler()
 
-dataset["gender"].replace(["Female"], 1, inplace=True)
-dataset["gender"].replace(["Male"], 2, inplace=True)
-dataset["gender"].replace(["Other"], 3, inplace=True)
+for col in numeric_cols:
+    dataset[col] = scaler.fit_transform(dataset[[col]])
 
-dataset["ever_married"].replace(["Yes"], 4, inplace=True)
-dataset["ever_married"].replace(["No"], 5, inplace=True)
+# One-hot encode categorical columns
+dataset = pd.get_dummies(data=dataset, columns=categorical_cols)
 
-dataset["work_type"].replace(["children"], 6, inplace=True)
-dataset["work_type"].replace(["Govt_job"], 7, inplace=True)
-dataset["work_type"].replace(["Never_worked"], 8, inplace=True)
-dataset["work_type"].replace(["Private"], 9, inplace=True)
-dataset["work_type"].replace(["Self-employed"], 10, inplace=True)
-
-dataset["Residence_type"].replace(["Rural"], 11, inplace=True)
-dataset["Residence_type"].replace(["Urban"], 12, inplace=True)
-
-dataset["smoking_status"].replace(["formerly smoked"], 13, inplace=True)
-dataset["smoking_status"].replace(["never smoked"], 14, inplace=True)
-dataset["smoking_status"].replace(["smokes"], 15, inplace=True)
-dataset["smoking_status"].replace(["Unknown"], 16, inplace=True)
 
 
 def plot_column_importance(dataset_in):
@@ -82,22 +80,27 @@ def plot_stroke_distribution(dataset_in):
     plt.show()
 
 
-def plot_pca_explained_var(x):
+def plot_pca_explained_var(dataset_in:pd.DataFrame):
     # Dimension reduction
     # Create scaler
     scaler = StandardScaler()
     # Create a PCA instance
-    pca = PCA(n_components=5)
+    pca = PCA()
     # Create pipeline
     pipeline = make_pipeline(scaler, pca)
+
+    x = dataset_in.drop('stroke',axis=1)
+
     # Fit the pipeline to samples
     pipeline.fit(x)
+    cumulative_variance_ratio = np.cumsum(pca.explained_variance_ratio_)
     # Plot the explained variances
     features = range(pca.n_components_)
-    plt.bar(features, pca.explained_variance_)
-    plt.xlabel("PCA feature")
-    plt.ylabel("variance")
+    plt.plot(cumulative_variance_ratio)
+    plt.xlabel("Number of principal components")
+    plt.ylabel("cumulative explained variance ratio")
     plt.xticks(features)
+    plt.title("Cumulative Explained Variance Ratio by Principal Components")
     plt.show()
 
 
@@ -444,7 +447,7 @@ df = df.groupby("Model").head(1).round(3)
 sns.set_theme(style="darkgrid")
 
 # plot_glucose_distribution(df=dataset)
-plot_models_table(df_pca_comp, False, "Model","Comparing PCA impact on each model")
-
+plot_models_table(df_pca_comp, False, "Model","Comparing between each model")
+# plot_pca_explained_var(dataset)
 # # plt.figure(figsize=(12, 6))
 # plot_stroke_distribution(dataset)

@@ -47,9 +47,7 @@ warnings.filterwarnings("ignore")
 dataset = pd.read_csv("healthcare-dataset-stroke-data.csv")
 
 
-# REMOVE ID column -it's just an identifier and does not contribute to prediction(all other columns would shift left in index position)
-# dataset = pd.read_csv('healthcare-dataset-stroke-data.csv')
-dataset.drop("id", axis=1, inplace=True)
+
 
 
 # ...existing code...
@@ -71,7 +69,7 @@ def get_n_important_features(x, y, n=10):
 
 
 def run_experiments_gen(
-    models:dict, metrics, split_iterations: 1, iterations: 10, data_x, data_y
+    models:dict, metrics, iterations: 10, data_x, data_y
 ):
     """Run experiments with different models and return their accuracies.
     Args:
@@ -88,32 +86,32 @@ def run_experiments_gen(
 
     print("Running experiments...")
 
-    for split in range(split_iterations):
+    for iteration in range(iterations):
         # Splitting data into training and testing data
         X_train, X_test, Y_train, Y_test = train_test_split(
             data_x,
             data_y,
             test_size=0.2,
             stratify=data_y,
-            random_state=randomStates[split],
+            random_state=randomStates[iteration],
         )
+
         if variations["OverSampling"]:
-            smote = SMOTE(random_state=randomStates[split])
+            smote = SMOTE(random_state=randomStates[iteration])
             X_train, Y_train = smote.fit_resample(X_train, Y_train)
         elif variations["OverUnderSampling"]:
-            smoteenn = SMOTEENN(random_state=randomStates[split])
+            smoteenn = SMOTEENN(random_state=randomStates[iteration])
             X_train, Y_train = smoteenn.fit_resample(X_train, Y_train)
 
-        for i in range(iterations):
-            print(f"iteration {split+1}/{split_iterations} - run {i+1}/{iterations}")
+        print(f"iteration {iteration+1}/{iterations}")
 
-            for name, model in models.items():
-                model.fit(X_train, Y_train)
-                Y_pred = model.predict(X_test)
+        for name, model in models.items():
+            model.fit(X_train, Y_train)
+            Y_pred = model.predict(X_test)
 
-                for metric_name, metric_func in metrics.items():
-                    score = metric_func(Y_test, Y_pred)
-                    model_scores[name][metric_name].append(score)
+            for metric_name, metric_func in metrics.items():
+                score = metric_func(Y_test, Y_pred)
+                model_scores[name][metric_name].append(score)
     # Calculate the average scores for each model
     for name, scores in model_scores.items():
         for metric_name, score_list in scores.items():
@@ -181,7 +179,7 @@ def run_experiments(iterations: 1, data_x, data_y):
 
 models = {
     "Logistic Regression": LogisticRegression(
-        class_weight="balanced", solver="newton-cholesky"
+        class_weight="balanced", solver="newton-cholesky",random_state=rndstate_of_model
     ),
     "KNN": KNeighborsClassifier(
         n_neighbors=10,
@@ -190,16 +188,18 @@ models = {
         metric="minkowski",
     ),
     "Decision Tree": DecisionTreeClassifier(
-        criterion="entropy", max_depth=100, class_weight="balanced"
+        criterion="entropy", max_depth=100, class_weight="balanced",random_state=rndstate_of_model
     ),
     "Adaboost": AdaBoostClassifier(
         DecisionTreeClassifier(class_weight="balanced", max_depth=5),
         n_estimators=100,
         random_state=rndstate_of_model,
     ),
-    "SVM": SVC(C=100, kernel="rbf", degree=3, class_weight="balanced"),
+    "SVM": SVC(C=100, kernel="rbf", degree=3, class_weight="balanced",random_state=rndstate_of_model),
 }
 
+
+#end of functions defines
 
 metrics_used = {
     "accuracy": accuracy_score,
@@ -208,7 +208,8 @@ metrics_used = {
     "f1": f1_score,
 }
 
-
+# REMOVE ID column -it's just an identifier and does not contribute to prediction(all other columns would shift left in index position)
+dataset.drop("id", axis=1, inplace=True)
 # Replace all text into numbers
 dataset["bmi"] = pd.to_numeric(dataset["bmi"], errors="coerce")
 # dataset['bmi'].fillna(0, inplace=True)
@@ -238,9 +239,9 @@ Y = dataset["stroke"]
 X = dataset.drop(columns=["stroke"])
 
 variations = {
-    "PCA": True,  # Set to True if you want to use PCA
+    "PCA": False ,  # Set to True if you want to use PCA
     "PickBest": False,  # Set to True if you want to use the 10 best features
-    "OverSampling": False,  # Set to True if you want to use SMOTE
+    "OverSampling": True,  # Set to True if you want to use SMOTE
     "OverUnderSampling": False,  # Set to True if you want to use SMOTEENN
     "UnderSampling": False,  # Set to True if you want to use RandomUnderSampler
 }
@@ -252,10 +253,10 @@ if variations["PickBest"]:
 
 
 if variations["PCA"]:
-    pca_pipeline = make_pipeline(StandardScaler(), PCA())
+    pca_pipeline = make_pipeline(StandardScaler(), PCA(n_components=14))
     X = pd.DataFrame(pca_pipeline.fit_transform(X))
 
-scores = run_experiments_gen(models, metrics_used, 10, 5, X, Y)
+scores = run_experiments_gen(models, metrics_used, 20, X, Y)
 scores_df = pd.DataFrame(scores).T  # Transpose to have models as rows
 scores_df.index.name = "Model"
 
