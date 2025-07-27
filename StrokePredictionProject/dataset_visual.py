@@ -403,9 +403,9 @@ scores_df = pd.read_csv("scores.csv")
 
 #filter items on df by which method was added for model
 bool_filter = {
-    # "PCA":False,  
+    "PCA":False,  
     "PickBest": False,  
-    "OverSampling": False, 
+    # "OverSampling": False, 
     "OverUnderSampling": False, 
     "UnderSampling": False,  
 }
@@ -427,7 +427,19 @@ mask = True
 for key,val in bool_filter.items():
    mask = mask & (scores_df[key] == val)
 
-#
+df_oversmapling_comp = (
+    scores_df[mask]
+    .drop(labels=boolean_cols_woOverSamp, axis=1)
+    .sort_values(["f1","recall"], ascending=False)
+    .groupby(['Model','OverSampling'])
+    .head(n=1)
+    .round(3)
+    .sort_values(["Model","OverSampling"],ascending=False)
+)
+df_oversmapling_comp["OverSampling"].replace([True], 'With', inplace=True)
+df_oversmapling_comp["OverSampling"].replace([False], 'Without', inplace=True)
+
+#dataframe for showing pca comparision
 df_pca_comp = (
     scores_df[mask]
     .drop(labels=boolean_cols_woPCA, axis=1)
@@ -446,8 +458,11 @@ df = df.groupby("Model").head(1).round(3)
 
 sns.set_theme(style="darkgrid")
 
+mdl_cmp_title = "Comparing between each model"
+pca_cmp_title = "Comparing impact of PCA on each model"
+
 # plot_glucose_distribution(df=dataset)
-plot_models_table(df_pca_comp, False, "Model","Comparing between each model")
+plot_models_table(df_oversmapling_comp, False, "Model",mdl_cmp_title)
 # plot_pca_explained_var(dataset)
 # # plt.figure(figsize=(12, 6))
 # plot_stroke_distribution(dataset)

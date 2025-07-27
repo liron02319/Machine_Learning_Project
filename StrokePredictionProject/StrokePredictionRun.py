@@ -38,7 +38,7 @@ gen = rnd.Random(69)
 randomStates = np.array(
     [42, 69, 51, 11, 81, 955, 339, 647, 584, 12,44,231,84,36,45,97,12,54,74,5421]
 )  # Set a random states for reproducibility of experiments
-rndstate_of_model = 42
+state_random = 42
 
 # Suppress all warnings
 warnings.filterwarnings("ignore")
@@ -179,7 +179,7 @@ def run_experiments(iterations: 1, data_x, data_y):
 
 models = {
     "Logistic Regression": LogisticRegression(
-        class_weight="balanced", solver="newton-cholesky",random_state=rndstate_of_model
+        class_weight="balanced", solver="newton-cholesky",random_state=state_random
     ),
     "KNN": KNeighborsClassifier(
         n_neighbors=10,
@@ -188,14 +188,14 @@ models = {
         metric="minkowski",
     ),
     "Decision Tree": DecisionTreeClassifier(
-        criterion="entropy", max_depth=100, class_weight="balanced",random_state=rndstate_of_model
+        criterion="entropy", max_depth=100, class_weight="balanced",random_state=state_random
     ),
     "Adaboost": AdaBoostClassifier(
         DecisionTreeClassifier(class_weight="balanced", max_depth=5),
         n_estimators=100,
-        random_state=rndstate_of_model,
+        random_state=state_random,
     ),
-    "SVM": SVC(C=100, kernel="rbf", degree=3, class_weight="balanced",random_state=rndstate_of_model),
+    "SVM": SVC(C=100, kernel="rbf", degree=3, class_weight="balanced",random_state=state_random),
 }
 
 
@@ -240,20 +240,20 @@ X = dataset.drop(columns=["stroke"])
 
 variations = {
     "PCA": False ,  # Set to True if you want to use PCA
-    "PickBest": False,  # Set to True if you want to use the 10 best features
-    "OverSampling": True,  # Set to True if you want to use SMOTE
-    "OverUnderSampling": False,  # Set to True if you want to use SMOTEENN
+    "PickBest": True,  # Set to True if you want to use the 10 best features
+    "OverSampling": False,  # Set to True if you want to use SMOTE
+    "OverUnderSampling": True,  # Set to True if you want to use SMOTEENN
     "UnderSampling": False,  # Set to True if you want to use RandomUnderSampler
 }
 
 if variations["PickBest"]:
-    imp = ["avg_glucose_level", "bmi", "age", "hypertension", "heart_disease"]
-    # imp = get_n_important_features(X, Y, 10)  # Get the 10 most important features
+    imp = ["avg_glucose_level","bmi", "age", "hypertension", "heart_disease",'smoking_status_formerly smoked','smoking_status_Unknown']
+    # imp = get_n_important_features(X, Y, 7)  # Get the 10 most important features
     X = dataset[imp]
 
 
 if variations["PCA"]:
-    pca_pipeline = make_pipeline(StandardScaler(), PCA(n_components=14))
+    pca_pipeline = make_pipeline(StandardScaler(), PCA(n_components=14, random_state=state_random))
     X = pd.DataFrame(pca_pipeline.fit_transform(X))
 
 scores = run_experiments_gen(models, metrics_used, 20, X, Y)
