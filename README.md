@@ -38,7 +38,7 @@ The task is to classify patients according to their risk of stroke using various
 
 
 
-## Algorithms We Used to Stroke Prediction Project :
+## Algorithms We Used In The Project :
 
 * <b>SVM</b> works by mapping data to a high-dimensional feature space so that data points can be categorized, even when the data are not otherwise linearly separable. A separator between the categories is found, then the data are transformed in such a way that the separator could be drawn as a hyperplane. Following this, characteristics of new data can be used to predict the group to which a new record should belong [(Source)](https://www.ibm.com/docs/it/spss-modeler/SaaS?topic=models-how-svm-works).
 * <b>KNN</b> works by finding the distances between a query and all the examples in the data, selecting the specified number examples (K) closest to the query, then votes for the most frequent label (in the case of classification) or averages the labels (in the case of regression) [(Source)](https://towardsdatascience.com/machine-learning-basics-with-the-k-nearest-neighbors-algorithm-6a6e71d01761).
