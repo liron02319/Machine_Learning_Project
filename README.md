@@ -50,7 +50,8 @@ The task is to classify patients according to their risk of stroke using various
 
 
 ## Presentation:
-A presentation is also included with the project, which provides a clear and concise explanation of the objectives, methodology, data preprocessing steps, machine learning models used, results comparison, and key insights. The slides walk through the entire project flow and visually support the analysis and conclusions drawn from the data.  
+A presentation is also included with the project, which provides a clear and concise explanation of the objectives, methodology, data preprocessing steps, machine learning models used, results comparison, and key insights.  
+The slides walk through the entire project flow and visually support the analysis and conclusions drawn from the data.  
   
 <img width="400" height="500" alt="image" src="https://github.com/user-attachments/assets/8b73af94-f177-4890-aec9-1d699aecf5c2" />
 
