@@ -97,7 +97,7 @@ def run_experiments_gen(
         )
 
         if variations["OverSampling"]:
-            smote = SMOTE(random_state=randomStates[iteration])
+            smote = SMOTE(random_state=randomStates[iteration],sampling_strategy=0.6)
             X_train, Y_train = smote.fit_resample(X_train, Y_train)
         elif variations["OverUnderSampling"]:
             smoteenn = SMOTEENN(random_state=randomStates[iteration])
@@ -240,9 +240,9 @@ X = dataset.drop(columns=["stroke"])
 
 variations = {
     "PCA": False ,  # Set to True if you want to use PCA
-    "PickBest": True,  # Set to True if you want to use the 10 best features
-    "OverSampling": False,  # Set to True if you want to use SMOTE
-    "OverUnderSampling": True,  # Set to True if you want to use SMOTEENN
+    "PickBest": False,  # Set to True if you want to use the 10 best features
+    "OverSampling": True,  # Set to True if you want to use SMOTE
+    "OverUnderSampling": False,  # Set to True if you want to use SMOTEENN
     "UnderSampling": False,  # Set to True if you want to use RandomUnderSampler
 }
 

@@ -45,7 +45,6 @@ for col in numeric_cols:
 dataset = pd.get_dummies(data=dataset, columns=categorical_cols)
 
 
-
 def plot_column_importance(dataset_in):
     # Checking the importance of each column with ExtraTreesClassifier
     x = dataset_in.iloc[:, :-1]
@@ -80,7 +79,7 @@ def plot_stroke_distribution(dataset_in):
     plt.show()
 
 
-def plot_pca_explained_var(dataset_in:pd.DataFrame):
+def plot_pca_explained_var(dataset_in: pd.DataFrame):
     # Dimension reduction
     # Create scaler
     scaler = StandardScaler()
@@ -89,7 +88,7 @@ def plot_pca_explained_var(dataset_in:pd.DataFrame):
     # Create pipeline
     pipeline = make_pipeline(scaler, pca)
 
-    x = dataset_in.drop('stroke',axis=1)
+    x = dataset_in.drop("stroke", axis=1)
 
     # Fit the pipeline to samples
     pipeline.fit(x)
@@ -354,7 +353,7 @@ def plot_models_table(
         cellText = model_df.values.astype(str)
         colLabels = list(model_df.columns)
         header_colors = [color_header] * n_cols
-        
+
     fig, ax = plt.subplots(
         figsize=(
             min(14, 2 + model_df.shape[1] + (with_index)),
@@ -394,25 +393,91 @@ def plot_models_table(
         fontsize=20,
         fontweight="semibold",
         fontstyle="italic",
-        y=0.98, # Adjust vertical position if needed
+        y=0.98,  # Adjust vertical position if needed
     )
     plt.tight_layout()
     plt.show()
 
+
+def filter_df_by_boolean(df: pd.DataFrame, boolean_filter: dict) -> pd.DataFrame:
+    """
+    Filter the DataFrame based on boolean conditions.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame to filter.
+    boolean_filter (dict): A dictionary where keys are column names and values are the boolean values to filter by.
+
+    Returns:
+    pd.DataFrame: The filtered DataFrame.
+    """
+    mask = True
+    for key, val in boolean_filter.items():
+        mask &= df[key] == val
+
+    return df[mask]
+
+
+def plot_model_Oversampling_comparison(scores: pd.DataFrame, boolean_filter: dict):
+    """Plot a comparison of models with and without oversampling."""
+    boolean_cols_woOverSamp = ["PCA", "PickBest", "OverUnderSampling", "UnderSampling"]
+    df_temp = filter_df_by_boolean(scores, boolean_filter)
+    df_oversmapling_comp = (
+        df_temp.drop(labels=boolean_cols_woOverSamp, axis=1)
+        .sort_values(["f1", "recall"], ascending=False)
+        .groupby(["Model", "OverSampling"])
+        .head(n=1)
+        .round(3)
+        .sort_values(["Model", "OverSampling"], ascending=False)
+    )
+    df_oversmapling_comp["OverSampling"].replace([True], "With", inplace=True)
+    df_oversmapling_comp["OverSampling"].replace([False], "Without", inplace=True)
+
+    plot_models_table(
+        df_oversmapling_comp,
+        False,
+        "Model",
+        "Comparing the impact of Oversampling on each model",
+    )
+
+
+def plot_Model_PCA_comparison(scores: pd.DataFrame, boolean_filter: dict):
+    """Plot a comparison of models with and without PCA."""
+
+    boolean_cols_woPCA = [
+        "PickBest",
+        "OverSampling",
+        "OverUnderSampling",
+        "UnderSampling",
+    ]
+    df_temp = filter_df_by_boolean(scores, boolean_filter)
+    df_PCA_comp = (
+        df_temp.drop(labels=boolean_cols_woPCA, axis=1)
+        .sort_values(["f1", "recall"], ascending=False)
+        .groupby(["Model", "PCA"])
+        .head(n=1)
+        .round(3)
+        .sort_values(["Model", "PCA"], ascending=False)
+    )
+
+    df_PCA_comp["PCA"].replace([True], "With", inplace=True)
+    df_PCA_comp["PCA"].replace([False], "Without", inplace=True)
+
+    plot_models_table(
+        df_PCA_comp, False, "Model", "Comparing the impact of PCA on each model"
+    )
+
+
 scores_df = pd.read_csv("scores.csv")
 
-#filter items on df by which method was added for model
+# filter items on df by which method was added for model
 bool_filter = {
-    "PCA":False,  
-    "PickBest": False,  
-    # "OverSampling": False, 
-    "OverUnderSampling": False, 
-    "UnderSampling": False,  
+    # "PCA": False,
+    "PickBest": False,
+    "OverSampling": False,
+    "OverUnderSampling": False,
+    "UnderSampling": False,
 }
-
 boolean_cols = ["PCA", "PickBest", "OverSampling", "OverUnderSampling", "UnderSampling"]
-boolean_cols_woPCA = ["PickBest", "OverSampling", "OverUnderSampling", "UnderSampling"]
-boolean_cols_woOverSamp = ["PCA","PickBest", "OverUnderSampling", "UnderSampling"]
 score_metrics = ["recall", "f1", "precision", "accuracy"]
 
 ## reorder columns to have Model name first and scores last (most right)
@@ -422,38 +487,12 @@ other_cols = [
 ]
 ordered_cols = ["Model"] + existing_booleans + other_cols
 scores_df = scores_df[ordered_cols]
-
-mask = True
-for key,val in bool_filter.items():
-   mask = mask & (scores_df[key] == val)
-
-df_oversmapling_comp = (
-    scores_df[mask]
-    .drop(labels=boolean_cols_woOverSamp, axis=1)
-    .sort_values(["f1","recall"], ascending=False)
-    .groupby(['Model','OverSampling'])
-    .head(n=1)
-    .round(3)
-    .sort_values(["Model","OverSampling"],ascending=False)
-)
-df_oversmapling_comp["OverSampling"].replace([True], 'With', inplace=True)
-df_oversmapling_comp["OverSampling"].replace([False], 'Without', inplace=True)
-
-#dataframe for showing pca comparision
-df_pca_comp = (
-    scores_df[mask]
-    .drop(labels=boolean_cols_woPCA, axis=1)
-    .sort_values(["f1","recall"], ascending=False)
-    .groupby(['Model','PCA'])
-    .head(n=1)
-    .round(3)
-    .sort_values(["Model","PCA"],ascending=False)
-)
-df_pca_comp["PCA"].replace([True], 'With', inplace=True)
-df_pca_comp["PCA"].replace([False], 'Without', inplace=True)
-
 # top = top_n_models(scores_df, n=30, by=score_metrics)
-df = scores_df[mask].drop(labels=boolean_cols, axis=1).sort_values(["f1"], ascending=False)
+df = (
+    filter_df_by_boolean(scores_df, bool_filter)
+    .drop(labels=boolean_cols, axis=1)
+    .sort_values(["f1"], ascending=False)
+)
 df = df.groupby("Model").head(1).round(3)
 
 sns.set_theme(style="darkgrid")
@@ -462,7 +501,8 @@ mdl_cmp_title = "Comparing between each model"
 pca_cmp_title = "Comparing impact of PCA on each model"
 
 # plot_glucose_distribution(df=dataset)
-plot_models_table(df_oversmapling_comp, False, "Model",mdl_cmp_title)
+plot_Model_PCA_comparison(scores_df, bool_filter)
+# plot_models_table(df_oversmapling_comp, False, "Model", mdl_cmp_title)
 # plot_pca_explained_var(dataset)
 # # plt.figure(figsize=(12, 6))
 # plot_stroke_distribution(dataset)
