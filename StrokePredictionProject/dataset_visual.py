@@ -471,7 +471,7 @@ scores_df = pd.read_csv("scores.csv")
 
 # filter items on df by which method was added for model
 bool_filter = {
-    # "PCA": False,
+    "PCA": False,
     "PickBest": False,
     "OverSampling": False,
     "OverUnderSampling": False,
@@ -501,8 +501,8 @@ mdl_cmp_title = "Comparing between each model"
 pca_cmp_title = "Comparing impact of PCA on each model"
 
 # plot_glucose_distribution(df=dataset)
-plot_Model_PCA_comparison(scores_df, bool_filter)
-# plot_models_table(df_oversmapling_comp, False, "Model", mdl_cmp_title)
+# plot_Model_PCA_comparison(scores_df, bool_filter)
+plot_models_table(df, False, "Model", mdl_cmp_title)
 # plot_pca_explained_var(dataset)
 # # plt.figure(figsize=(12, 6))
 # plot_stroke_distribution(dataset)

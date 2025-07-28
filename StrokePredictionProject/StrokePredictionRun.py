@@ -21,22 +21,50 @@ import seaborn as sns
 import warnings
 import numpy as np
 from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import (
+    accuracy_score,
+    make_scorer,
+    precision_score,
+    recall_score,
+    f1_score,
+)
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from sklearn.pipeline import make_pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 from imblearn.over_sampling import SMOTE
 from imblearn.combine import SMOTEENN
+import imblearn.pipeline as imbpipeline
 
 gen = rnd.Random(69)
 randomStates = np.array(
-    [42, 69, 51, 11, 81, 955, 339, 647, 584, 12,44,231,84,36,45,97,12,54,74,5421]
+    [
+        42,
+        69,
+        51,
+        11,
+        81,
+        955,
+        339,
+        647,
+        584,
+        12,
+        44,
+        231,
+        84,
+        36,
+        45,
+        97,
+        12,
+        54,
+        74,
+        5421,
+    ]
 )  # Set a random states for reproducibility of experiments
 state_random = 42
 
@@ -45,9 +73,6 @@ warnings.filterwarnings("ignore")
 
 # Read from the dataset
 dataset = pd.read_csv("healthcare-dataset-stroke-data.csv")
-
-
-
 
 
 # ...existing code...
@@ -59,6 +84,7 @@ plt.rcParams["figure.figsize"] = 10, 3
 sns.set_style("darkgrid")
 
 
+# Function to get the n most important features from the dataset using ExtraTreesClassifier
 def get_n_important_features(x, y, n=10):
     """Get the n most important features from the dataset using ExtraTreesClassifier."""
     ln = x.shape[1]
@@ -68,14 +94,12 @@ def get_n_important_features(x, y, n=10):
     return feat_importances.nlargest(n).index.tolist()
 
 
-def run_experiments_gen(
-    models:dict, metrics, iterations: 10, data_x, data_y
-):
+# Function to run experiments with different models and return their scores
+def run_experiments_gen(models: dict, metrics, iterations: 10, data_x, data_y):
     """Run experiments with different models and return their accuracies.
     Args:
         models (dict): Dictionary of model names and their instances model name:model.
         metrics (dict): Dictionary of metric names and their functions.
-        split_iterations (int): Number of iterations to split the data.
         iterations (int): Number of iterations to run the experiments.
         data_x: Features for training and testing.
         data_y: Labels for training and testing."""
@@ -96,12 +120,14 @@ def run_experiments_gen(
             random_state=randomStates[iteration],
         )
 
-        if variations["OverSampling"]:
-            smote = SMOTE(random_state=randomStates[iteration],sampling_strategy=0.6)
-            X_train, Y_train = smote.fit_resample(X_train, Y_train)
-        elif variations["OverUnderSampling"]:
-            smoteenn = SMOTEENN(random_state=randomStates[iteration])
-            X_train, Y_train = smoteenn.fit_resample(X_train, Y_train)
+        # if variations["OverSampling"]:
+        #     smote = SMOTE(random_state=randomStates[iteration], sampling_strategy=0.4)
+        #     X_train, Y_train = smote.fit_resample(X_train, Y_train)
+        # elif variations["OverUnderSampling"]:
+        #     smoteenn = SMOTEENN(
+        #         random_state=randomStates[iteration], sampling_strategy=0.6
+        #     )
+        #     X_train, Y_train = smoteenn.fit_resample(X_train, Y_train)
 
         print(f"iteration {iteration+1}/{iterations}")
 
@@ -120,66 +146,104 @@ def run_experiments_gen(
     return model_scores
 
 
-def run_experiments(iterations: 1, data_x, data_y):
+# grid search function to find the best parameters for each model
+def runGridSearch(models: dict, parameters_grid, scoring_metrics, data_x, data_y):
+    """Run GridSearchCV for each model and return the model.
+    Args:
+        models (dict): Dictionary of model names and their instances model name:model.
+        parameters_grid (dict): Dictionary of model names and their parameter grids.
+        scoring_metrics (dict): Dictionary of metric names and their functions.
+        data_x: Features for training and testing.
+        data_y: Labels for training and testing."""
 
-    # Splitting data into training and testing data
-    X_train, X_test, Y_train, Y_test = train_test_split(data_x, data_y, test_size=0.2)
+    # scorers = {name: make_scorer(score) for name, score in scoring_metrics.items()}
 
-    accuracies = {
-        "Logistic Regression": [],
-        "KNN": [],
-        "Decision Tree": [],
-        "Adaboost": [],
-        "SVM": [],
+    scorers = {
+        "accuracy": make_scorer(accuracy_score, response_method="predict"),
+        "precision": make_scorer(
+            precision_score, response_method="predict", zero_division=0
+        ),
+        "recall": make_scorer(recall_score, response_method="predict", zero_division=0),
+        "f1": make_scorer(f1_score, response_method="predict", zero_division=0),
     }
 
-    print("Running experiments...")
+    results = {}
+    for name, model in models.items():
+        print(f"Running GridSearchCV for {name}...")
+        grid_search = GridSearchCV(
+            model,
+            param_grid=parameters_grid[name],
+            cv=5,
+            scoring=scorers,
+            refit="f1",
+            n_jobs=-1,
+        )
+        grid_search.fit(data_x, data_y)
+        results[name] = grid_search
+        # print(f"Best params for {name}: {grid_search.best_params_}")
+    return results
 
-    for i in range(iterations):
-        if i % 10 == 0:
-            print(f"Iteration {i+1}/{iterations}")
-        # Logistic Regression
-        model_Logistic = LogisticRegression()
-        model_Logistic.fit(X_train, Y_train)
-        Y_pred = model_Logistic.predict(X_test)
-        model_Logistic_accuracy = round(
-            accuracy_score(Y_test, Y_pred) * 100, 4
-        )  # Accuracy
-        accuracies["Logistic Regression"].append(model_Logistic_accuracy)
 
-        # KNearest Neighbors
-        model_KNN = KNeighborsClassifier(n_neighbors=15)
-        model_KNN.fit(X_train, Y_train)
-        Y_pred = model_KNN.predict(X_test)
-        model_KNN_accuracy = round(accuracy_score(Y_test, Y_pred) * 100, 4)  # Accuracy
-        accuracies["KNN"].append(model_KNN_accuracy)
+# pipe functions to apply transformations to the models
+def add_PCA_transform(models: dict, n_components=14):
+    """Apply PCA to the models and return the transformed models.
+    Args:
+        models (dict): Dictionary of model names and their instances model name:model.
+    """
+    pca_models = {}
+    for name, model in models.items():
+        pca_pipe = Pipeline(
+            [
+                ("StandardScaler", StandardScaler()),
+                ("PCA", PCA(n_components=n_components, random_state=state_random)),
+                ("clf", model),
+            ]
+        )
+        pca_models[name] = pca_pipe
+    return pca_models
 
-        # Decision Tree
-        model_tree = DecisionTreeClassifier(criterion="gini", max_depth=100)
-        model_tree.fit(X_train, Y_train)
-        Y_pred = model_tree.predict(X_test)
-        model_tree_accuracy = round(accuracy_score(Y_test, Y_pred) * 100, 4)  # Accuracy
-        accuracies["Decision Tree"].append(model_tree_accuracy)
 
-        # Adaboost
-        model_adaboost = AdaBoostClassifier(n_estimators=50, learning_rate=1)
-        model_adaboost.fit(X_train, Y_train)
-        Y_pred = model_adaboost.predict(X_test)
-        Adaboost_accuracy = round(accuracy_score(Y_test, Y_pred) * 100, 4)  # Accuracy
-        accuracies["Adaboost"].append(Adaboost_accuracy)
+def add_Smote_transform(models: dict, sampling_strategy=0.4):
+    """Apply SMOTE oversampling to the models and return the transformed models.
+    Args:
+        models (dict): Dictionary of model names and their instances model name:model.
+        sampling_strategy (float): The sampling strategy for SMOTE."""
+    smote_models = {}
+    for name, model in models.items():
+        smote_pipe = imbpipeline.Pipeline(
+            [
+                ("StandardScaler", StandardScaler()),
+                ("sample", SMOTE(sampling_strategy=sampling_strategy)),
+                ("clf", model),
+            ]
+        )
+        smote_models[name] = smote_pipe
+    return smote_models
 
-        # SVM
-        model_svm = SVC(C=10000, kernel="rbf", degree=3)
-        model_svm.fit(X_train, Y_train)
-        Y_pred = model_svm.predict(X_test)
-        svm_accuracy = round(accuracy_score(Y_test, Y_pred) * 100, 4)  # Accuracy
-        accuracies["SVM"].append(svm_accuracy)
-    return accuracies
 
+def add_SmoteENN_transform(models: dict, sampling_strategy=0.6):
+    """Apply SMOTEENN overundersampling to the models and return the transformed models.
+    Args:
+        models (dict): Dictionary of model names and their instances model name:model.
+        sampling_strategy (float): The sampling strategy for SMOTEENN."""
+    smoteenn_models = {}
+    for name, model in models.items():
+        smoteenn_pipe = imbpipeline.Pipeline(
+            [
+                ("StandardScaler", StandardScaler()),
+                ("sample", SMOTE(sampling_strategy=sampling_strategy)),
+                ("clf", model),
+            ]
+        )
+        smoteenn_models[name] = smoteenn_pipe
+    return smoteenn_models
+
+
+# end of functions defines
 
 models = {
     "Logistic Regression": LogisticRegression(
-        class_weight="balanced", solver="newton-cholesky",random_state=state_random
+        class_weight="balanced", solver="newton-cholesky", random_state=state_random
     ),
     "KNN": KNeighborsClassifier(
         n_neighbors=10,
@@ -188,24 +252,54 @@ models = {
         metric="minkowski",
     ),
     "Decision Tree": DecisionTreeClassifier(
-        criterion="entropy", max_depth=100, class_weight="balanced",random_state=state_random
+        criterion="entropy",
+        max_depth=100,
+        class_weight="balanced",
+        random_state=state_random,
     ),
     "Adaboost": AdaBoostClassifier(
         DecisionTreeClassifier(class_weight="balanced", max_depth=5),
         n_estimators=100,
         random_state=state_random,
+        algorithm="SAMME",
     ),
-    "SVM": SVC(C=100, kernel="rbf", degree=3, class_weight="balanced",random_state=state_random),
+    "SVM": LinearSVC(
+        C=100,
+        class_weight="balanced",
+        random_state=state_random,
+    ),
 }
-
-
-#end of functions defines
 
 metrics_used = {
     "accuracy": accuracy_score,
     "precision": precision_score,
     "recall": recall_score,
     "f1": f1_score,
+}
+
+param_grids = {
+    "Logistic Regression": {
+        "solver": ["lbfgs", "liblinear", "newton-cholesky"],
+        "C": [1, 10, 100, 1000],
+    },
+    "KNN": {
+        "n_neighbors": [2, 3, 4, 5, 10, 15],
+        "weights": ["uniform", "distance"],
+        "metric": ["minkowski", "euclidean"],
+    },
+    "Decision Tree": {
+        "criterion": ["gini", "entropy"],
+        "max_depth": [10, 25, 50, 100, 150],
+    },
+    "Adaboost": {
+        "n_estimators": [50, 75, 100, 150, 200, 300],
+        "learning_rate": [0.5, 0.75, 1.0, 1.5, 2.0],
+    },
+    "SVM": {
+        "C": [1, 10, 100, 1000],
+        # "kernel": ["rbf", "linear"],
+        # "degree": [2, 3],
+    },
 }
 
 # REMOVE ID column -it's just an identifier and does not contribute to prediction(all other columns would shift left in index position)
@@ -225,6 +319,8 @@ categorical_cols = [
     "smoking_status",
 ]
 
+# preprocess the dataset
+
 numeric_cols = ["age", "avg_glucose_level", "bmi"]
 scaler = MinMaxScaler()
 
@@ -234,12 +330,15 @@ for col in numeric_cols:
 # One-hot encode categorical columns
 dataset = pd.get_dummies(data=dataset, columns=categorical_cols)
 
+# end of preprocessing
+
 # Drop the 'stroke' column to use the rest as features
 Y = dataset["stroke"]
 X = dataset.drop(columns=["stroke"])
 
+# Set the variations you want to test
 variations = {
-    "PCA": False ,  # Set to True if you want to use PCA
+    "PCA": False,  # Set to True if you want to use PCA
     "PickBest": False,  # Set to True if you want to use the 10 best features
     "OverSampling": True,  # Set to True if you want to use SMOTE
     "OverUnderSampling": False,  # Set to True if you want to use SMOTEENN
@@ -247,23 +346,71 @@ variations = {
 }
 
 if variations["PickBest"]:
-    imp = ["avg_glucose_level","bmi", "age", "hypertension", "heart_disease",'smoking_status_formerly smoked','smoking_status_Unknown']
-    # imp = get_n_important_features(X, Y, 7)  # Get the 10 most important features
+    imp = [
+        "avg_glucose_level",
+        "bmi",
+        "age",
+        "hypertension",
+        "heart_disease",
+    ]  # manually selected features based on domain knowledge
+    # Alternatively, you can use the get_n_important_features function to select the top features
+    # imp = get_n_important_features(X, Y, 10)  # Get the 10 most important features
     X = dataset[imp]
 
 
 if variations["PCA"]:
-    pca_pipeline = make_pipeline(StandardScaler(), PCA(n_components=14, random_state=state_random))
-    X = pd.DataFrame(pca_pipeline.fit_transform(X))
+    models = add_PCA_transform(models, n_components=14)
+    p_grid = {}  # Define the parameter grid for PCA
+    for model_name in param_grids.keys():
+        p_grid[model_name] = {}
+        for param_name, params in param_grids[model_name].items():
+            p_grid[model_name][f"clf__{param_name}"] = params
+        p_grid[model_name]["PCA__n_components"] = [8, 9, 10, 11, 12, 13, 14]
+    param_grids = p_grid  # Update the parameter grids with PCA parameters
+    # pca_pipeline = make_pipeline(
+    #     StandardScaler(), PCA(n_components=14, random_state=state_random)
+    # )
+    # X = pd.DataFrame(pca_pipeline.fit_transform(X))
+
+
+if variations["OverSampling"]:
+    models = add_Smote_transform(models, sampling_strategy=0.4)
+    p_grid = {}
+    for model_name in param_grids.keys():
+        p_grid[model_name] = {}
+        for param_name, params in param_grids.get(model_name, None).items():
+            p_grid[model_name][f"clf__{param_name}"] = params
+        p_grid[model_name]["sample__sampling_strategy"] = [0.2, 0.3, 0.4, 0.6, 0.8]
+    param_grids = p_grid
+
+elif variations["OverUnderSampling"]:
+    models = add_SmoteENN_transform(models, sampling_strategy=0.6)
+    p_grid = {}
+    for model_name in param_grids.keys():
+        p_grid[model_name] = {}
+        for param_name, params in param_grids.get(model_name, None).items():
+            p_grid[model_name][f"clf__{param_name}"] = params
+        p_grid[model_name]["sample__sampling_strategy"] = [0.2, 0.3, 0.4, 0.6, 0.8]
+    param_grids = p_grid
+
+cv_results = runGridSearch(models, param_grids, metrics_used, X, Y)
+# imporved_models = {}
+for param_name, gridsearchcv in cv_results.items():
+    print(f"Best params for {param_name}: {gridsearchcv.best_params_}")
+    models.update(
+        {param_name: gridsearchcv.best_estimator_}
+    )  # Update the models with the best estimators
 
 scores = run_experiments_gen(models, metrics_used, 20, X, Y)
 scores_df = pd.DataFrame(scores).T  # Transpose to have models as rows
 scores_df.index.name = "Model"
 
-for key, value in variations.items():
-    scores_df[key] = value  # Set the index name to 'Model'
+for model_name, value in variations.items():
+    scores_df[model_name] = value  # Set the index name to 'Model'
 
+# Save the results to a CSV file
 scores_df.to_csv("Results.csv", mode="w", header=True, index=True)
+print(scores_df.to_string())
 # Make a list with the accuracies items
 # acc_list = accuracies.items()
 """
