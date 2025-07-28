@@ -9,6 +9,11 @@
 The project is based on the Stroke Prediction Dataset from Kaggle.  
 https://www.kaggle.com/datasets/fedesoriano/stroke-prediction-dataset
 
+## Team Members:
+* Liron Cohen   
+* Omer Apter
+
+  
 ## What is a Stroke?
 A stroke (also known as a cerebrovascular accident) occurs when there is a sudden disruption in the blood supply to brain tissue.
 This disruption causes neurological damage, which may manifest in various ways such as speech difficulties, weakness or paralysis of the limbs, and trouble walking. In some cases, a stroke can lead to death.
@@ -31,9 +36,6 @@ The task is to classify patients according to their risk of stroke using various
 <img width="2333" height="800" alt="image" src="https://github.com/user-attachments/assets/3161a870-9a26-452c-acae-9f3acf1a3110" />
 
 
-## Team Members:
-* Liron Cohen   
-* Omer Apter
 
 
 ## Algorithms We Used to Stroke Prediction Project :
