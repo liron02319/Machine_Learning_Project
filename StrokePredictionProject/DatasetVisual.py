@@ -9,6 +9,7 @@ from sklearn.discriminant_analysis import StandardScaler
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import ConfusionMatrixDisplay
 
 # Suppress all warnings
 warnings.filterwarnings("ignore")
@@ -467,6 +468,58 @@ def plot_Model_PCA_comparison(scores: pd.DataFrame, boolean_filter: dict):
     )
 
 
+def plotModelScoresComparison(
+    scores_df: pd.DataFrame, boolean_filter: dict, score_metrics
+):
+    boolean_cols = [
+        "PCA",
+        "PickBest",
+        "OverSampling",
+        "OverUnderSampling",
+        "UnderSampling",
+    ]
+
+    ## reorder columns to have Model name first and scores last (most right)
+    existing_booleans = [col for col in boolean_cols if col in scores_df.columns]
+    other_cols = [
+        col for col in scores_df.columns if col not in (["Model"] + existing_booleans)
+    ]
+    ordered_cols = ["Model"] + existing_booleans + other_cols
+    scores_df = scores_df[ordered_cols]
+    # top = top_n_models(scores_df, n=30, by=score_metrics)
+    df = (
+        filter_df_by_boolean(scores_df, bool_filter)
+        .drop(labels=boolean_cols, axis=1)
+        .sort_values(["f1"], ascending=False)
+    )
+    df = df.groupby("Model").head(1).round(3)
+
+    sns.set_theme(style="darkgrid")
+
+    mdl_cmp_title = "Comparing between each model"
+
+    # plot_glucose_distribution(df=dataset)
+    # plot_Model_PCA_comparison(scores_df, bool_filter)
+    plot_models_table(df, False, "Model", mdl_cmp_title)
+
+
+def plotAverageConfusionmatrices(
+    confusion_matrices: dict,
+    models: dict,
+):
+    n_models = len(models)
+    fig, axes = plt.subplots(1, n_models, figsize=(5 * n_models, 4))
+    if n_models == 1:
+        axes = [axes]
+    for ax, (name, cm) in zip(axes, confusion_matrices.items()):
+        disp = ConfusionMatrixDisplay(cm)
+        disp.plot(ax=ax, colorbar=False)
+        ax.set_title(name)
+    fig.suptitle("Confusion Matrix for Each Model", fontsize=16)
+    plt.tight_layout()
+    plt.show()
+
+
 scores_df = pd.read_csv("scores.csv")
 
 # filter items on df by which method was added for model
@@ -502,7 +555,7 @@ pca_cmp_title = "Comparing impact of PCA on each model"
 
 # plot_glucose_distribution(df=dataset)
 # plot_Model_PCA_comparison(scores_df, bool_filter)
-plot_models_table(df, False, "Model", mdl_cmp_title)
+# plot_models_table(df, False, "Model", mdl_cmp_title)
 # plot_pca_explained_var(dataset)
 # # plt.figure(figsize=(12, 6))
 # plot_stroke_distribution(dataset)

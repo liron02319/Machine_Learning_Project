@@ -27,6 +27,7 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
     f1_score,
+    confusion_matrix,
 )
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.decomposition import PCA
@@ -36,10 +37,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.svm import SVC, LinearSVC
+from sklearn.svm import LinearSVC
 from imblearn.over_sampling import SMOTE
 from imblearn.combine import SMOTEENN
 import imblearn.pipeline as imbpipeline
+from DatasetVisual import plotModelScoresComparison, plotAverageConfusionmatrices
+
 
 gen = rnd.Random(69)
 randomStates = np.array(
@@ -239,6 +242,92 @@ def add_SmoteENN_transform(models: dict, sampling_strategy=0.6):
     return smoteenn_models
 
 
+def run_experiments_confusionMatrix(models: dict, iterations: 20, data_x, data_y):
+    """Run experiments with different models and return their confusion matrix.
+    Args:
+        models (dict): Dictionary of model names and their instances model name:model.
+        metrics (dict): Dictionary of metric names and their functions.
+        iterations (int): Number of iterations to run the experiments.
+        data_x: Features for training and testing.
+        data_y: Labels for training and testing.
+    Returns:
+        avg_matrixes (dict): Dictionary of model names and their average confusion matrix.
+    """
+    model_matrixes = {name: [] for name in models.keys()}
+
+    print("Running experiments...")
+
+    for iteration in range(iterations):
+        # Splitting data into training and testing data
+        X_train, X_test, Y_train, Y_test = train_test_split(
+            data_x,
+            data_y,
+            test_size=0.2,
+            stratify=data_y,
+            random_state=randomStates[iteration],
+        )
+
+        print(f"iteration {iteration+1}/{iterations}")
+
+        for name, model in models.items():
+            model.fit(X_train, Y_train)
+            Y_pred = model.predict(X_test)
+            # Calculate confusion matrix
+            cm = confusion_matrix(y_pred=Y_pred, y_true=Y_test)
+            model_matrixes[name].append(cm)
+
+        avg_matrices = {
+            name: np.mean(matrices, axis=0).astype(int)
+            for name, matrices in model_matrixes.items()
+        }
+
+    # Return the average confusion matrixes for each model
+    return avg_matrices
+
+
+def full_confusion_matrix_experiment(models: dict, iterations: 20, data_x, data_y):
+    """Run experiments with different models and plot their confusion matrices.
+    Args:
+        models (dict): Dictionary of model names and their instances model name:model.
+        iterations (int): Number of iterations to run the experiments.
+        data_x: Features for training and testing.
+        data_y: Labels for training and testing."""
+    confusion_matrices = run_experiments_confusionMatrix(
+        models, iterations, data_x, data_y
+    )
+    plotAverageConfusionmatrices(confusion_matrices, models)
+
+
+def full_score_experiment(
+    to_save: bool, models: dict, metrics, iterations: 20, data_x, data_y
+):
+    """Run experiments with different models and plot or save their scores
+    Args:
+        to_save (bool): Whether to save the results to a CSV file or plot them.
+        models (dict): Dictionary of model names and their instances model name:model.
+        metrics (dict): Dictionary of metric names and their functions.
+        iterations (int): Number of iterations to run the experiments.
+        data_x: Features for training and testing.
+        data_y: Labels for training and testing."""
+    scores = run_experiments_gen(models, metrics, iterations, data_x, data_y)
+    scores_df = pd.DataFrame(scores).T  # Transpose to have models as rows
+    scores_df.index.name = "Model"
+
+    # add which variations were used in the experiment
+    for model_name, value in variations.items():
+        scores_df[model_name] = value  # Set the index name to 'Model'
+
+    if to_save:
+        # Save the results to a CSV file
+        scores_df.to_csv("Results.csv", mode="w", header=True, index=True)
+        print(scores_df.to_string())
+    else:
+        # plot the model scores comparison
+        plotModelScoresComparison(
+            scores_df, boolean_filter=variations, score_metrics=metrics.keys()
+        )
+
+
 # end of functions defines
 
 models = {
@@ -393,25 +482,39 @@ elif variations["OverUnderSampling"]:
         p_grid[model_name]["sample__sampling_strategy"] = [0.2, 0.3, 0.4, 0.6, 0.8]
     param_grids = p_grid
 
-cv_results = runGridSearch(models, param_grids, metrics_used, X, Y)
-# imporved_models = {}
-for param_name, gridsearchcv in cv_results.items():
-    print(f"Best params for {param_name}: {gridsearchcv.best_params_}")
-    models.update(
-        {param_name: gridsearchcv.best_estimator_}
-    )  # Update the models with the best estimators
+## Uncomment the following lines to run GridSearchCV for each model
+# cv_results = runGridSearch(models, param_grids, metrics_used, X, Y)
+# # imporved_models = {}
+# for param_name, gridsearchcv in cv_results.items():
+#     print(f"Best params for {param_name}: {gridsearchcv.best_params_}")
+#     models.update(
+#         {param_name: gridsearchcv.best_estimator_}
+#     )  # Update the models with the best estimators
 
-scores = run_experiments_gen(models, metrics_used, 20, X, Y)
-scores_df = pd.DataFrame(scores).T  # Transpose to have models as rows
-scores_df.index.name = "Model"
 
-for model_name, value in variations.items():
-    scores_df[model_name] = value  # Set the index name to 'Model'
+# Run the full confusion matrix experiment
+full_confusion_matrix_experiment(
+    models=models, iterations=20, data_x=X, data_y=Y)
 
-# Save the results to a CSV file
-scores_df.to_csv("Results.csv", mode="w", header=True, index=True)
-print(scores_df.to_string())
-# Make a list with the accuracies items
+
+# # Run the full score experiment
+# full_score_experiment(
+#     to_save=True, models=models, metrics=metrics_used, iterations=20, data_x=X, data_y=Y
+# )
+
+
+# scores = run_experiments_gen(models, metrics_used, 20, X, Y)
+# scores_df = pd.DataFrame(scores).T  # Transpose to have models as rows
+# scores_df.index.name = "Model"
+
+# # add which variations were used in the experiment
+# for model_name, value in variations.items():
+#     scores_df[model_name] = value  # Set the index name to 'Model'
+
+# # Save the results to a CSV file
+# scores_df.to_csv("Results.csv", mode="w", header=True, index=True)
+# print(scores_df.to_string())
+# # Make a list with the accuracies items
 # acc_list = accuracies.items()
 """
 k, v = zip(*acc_list)
