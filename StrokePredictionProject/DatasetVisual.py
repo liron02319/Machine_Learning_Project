@@ -488,7 +488,7 @@ def plotModelScoresComparison(
     scores_df = scores_df[ordered_cols]
     # top = top_n_models(scores_df, n=30, by=score_metrics)
     df = (
-        filter_df_by_boolean(scores_df, bool_filter)
+        filter_df_by_boolean(scores_df, boolean_filter)
         .drop(labels=boolean_cols, axis=1)
         .sort_values(["f1"], ascending=False)
     )
@@ -503,55 +503,78 @@ def plotModelScoresComparison(
     plot_models_table(df, False, "Model", mdl_cmp_title)
 
 
-def plotAverageConfusionmatrices(
+def plotAverageConfusionMatrices(
     confusion_matrices: dict,
     models: dict,
 ):
+    max_cols = 3
     n_models = len(models)
-    fig, axes = plt.subplots(1, n_models, figsize=(5 * n_models, 4))
-    if n_models == 1:
-        axes = [axes]
+    n_cols = min(max_cols, n_models)
+    n_rows = int(np.ceil(n_models / max_cols))
+
+    sns.set_theme(style="white")
+
+    fig, axes = plt.subplots(
+        n_rows, n_cols, figsize=(15, 10), sharex="row", sharey="row"
+    )
+    axes = np.array(axes).reshape(-1)  # Flatten in case of single row/col
+
     for ax, (name, cm) in zip(axes, confusion_matrices.items()):
-        disp = ConfusionMatrixDisplay(cm)
-        disp.plot(ax=ax, colorbar=False)
-        ax.set_title(name)
-    fig.suptitle("Confusion Matrix for Each Model", fontsize=16)
+        disp = ConfusionMatrixDisplay(
+            confusion_matrix=cm, display_labels=["Not Stroke", "Stroke"]
+        )
+        disp.plot(ax=ax, colorbar=False, cmap=plt.cm.Blues)
+        ax.set_title(name, fontsize=14, fontweight="bold")
+
+    # Hide any unused axes
+    for ax in axes[len(confusion_matrices) :]:
+        ax.axis("off")
+
+    fig.suptitle(
+        "Confusion Matrix for Each Model",
+        fontsize=20,
+        fontweight="semibold",
+        fontstyle="italic",
+        # y=.02,  # Adjust vertical position if needed
+    )
     plt.tight_layout()
+    plt.subplots_adjust(wspace=1)  # Increase horizontal space between subplots
     plt.show()
 
 
-scores_df = pd.read_csv("scores.csv")
+# scores_df = pd.read_csv("scores.csv")
 
-# filter items on df by which method was added for model
-bool_filter = {
-    "PCA": False,
-    "PickBest": False,
-    "OverSampling": False,
-    "OverUnderSampling": False,
-    "UnderSampling": False,
-}
-boolean_cols = ["PCA", "PickBest", "OverSampling", "OverUnderSampling", "UnderSampling"]
-score_metrics = ["recall", "f1", "precision", "accuracy"]
+# # filter items on df by which method was added for model
+# bool_filter = {
+#     "PCA": False,
+#     "PickBest": False,
+#     "OverSampling": False,
+#     "OverUnderSampling": False,
+#     "UnderSampling": False,
+# }
+# boolean_cols = ["PCA", "PickBest", "OverSampling", "OverUnderSampling", "UnderSampling"]
+# score_metrics = ["recall", "f1", "precision", "accuracy"]
 
-## reorder columns to have Model name first and scores last (most right)
-existing_booleans = [col for col in boolean_cols if col in scores_df.columns]
-other_cols = [
-    col for col in scores_df.columns if col not in (["Model"] + existing_booleans)
-]
-ordered_cols = ["Model"] + existing_booleans + other_cols
-scores_df = scores_df[ordered_cols]
-# top = top_n_models(scores_df, n=30, by=score_metrics)
-df = (
-    filter_df_by_boolean(scores_df, bool_filter)
-    .drop(labels=boolean_cols, axis=1)
-    .sort_values(["f1"], ascending=False)
-)
-df = df.groupby("Model").head(1).round(3)
+# ## reorder columns to have Model name first and scores last (most right)
+# existing_booleans = [col for col in boolean_cols if col in scores_df.columns]
+# other_cols = [
+#     col for col in scores_df.columns if col not in (["Model"] + existing_booleans)
+# ]
+# ordered_cols = ["Model"] + existing_booleans + other_cols
+# scores_df = scores_df[ordered_cols]
+# # top = top_n_models(scores_df, n=30, by=score_metrics)
+# df = (
+#     filter_df_by_boolean(scores_df, bool_filter)
+#     .drop(labels=boolean_cols, axis=1)
+#     .sort_values(["f1"], ascending=False)
+# )
+# df = df.groupby("Model").head(1).round(3)
 
-sns.set_theme(style="darkgrid")
+# # sns.set_theme(style="darkgrid")
 
-mdl_cmp_title = "Comparing between each model"
-pca_cmp_title = "Comparing impact of PCA on each model"
+# mdl_cmp_title = "Comparing between each model"
+# pca_cmp_title = "Comparing impact of PCA on each model"
+
 
 # plot_glucose_distribution(df=dataset)
 # plot_Model_PCA_comparison(scores_df, bool_filter)

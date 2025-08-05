@@ -41,7 +41,7 @@ from sklearn.svm import LinearSVC
 from imblearn.over_sampling import SMOTE
 from imblearn.combine import SMOTEENN
 import imblearn.pipeline as imbpipeline
-from DatasetVisual import plotModelScoresComparison, plotAverageConfusionmatrices
+from DatasetVisual import plotModelScoresComparison, plotAverageConfusionMatrices
 
 
 gen = rnd.Random(69)
@@ -253,7 +253,7 @@ def run_experiments_confusionMatrix(models: dict, iterations: 20, data_x, data_y
     Returns:
         avg_matrixes (dict): Dictionary of model names and their average confusion matrix.
     """
-    model_matrixes = {name: [] for name in models.keys()}
+    model_matrices = {name: [] for name in models.keys()}
 
     print("Running experiments...")
 
@@ -274,12 +274,12 @@ def run_experiments_confusionMatrix(models: dict, iterations: 20, data_x, data_y
             Y_pred = model.predict(X_test)
             # Calculate confusion matrix
             cm = confusion_matrix(y_pred=Y_pred, y_true=Y_test)
-            model_matrixes[name].append(cm)
+            model_matrices[name].append(cm)
 
-        avg_matrices = {
-            name: np.mean(matrices, axis=0).astype(int)
-            for name, matrices in model_matrixes.items()
-        }
+    avg_matrices = {
+        name: np.mean(matrices, axis=0).astype(int)
+        for name, matrices in model_matrices.items()
+    }
 
     # Return the average confusion matrixes for each model
     return avg_matrices
@@ -295,7 +295,7 @@ def full_confusion_matrix_experiment(models: dict, iterations: 20, data_x, data_
     confusion_matrices = run_experiments_confusionMatrix(
         models, iterations, data_x, data_y
     )
-    plotAverageConfusionmatrices(confusion_matrices, models)
+    plotAverageConfusionMatrices(confusion_matrices, models)
 
 
 def full_score_experiment(
@@ -429,7 +429,7 @@ X = dataset.drop(columns=["stroke"])
 variations = {
     "PCA": False,  # Set to True if you want to use PCA
     "PickBest": False,  # Set to True if you want to use the 10 best features
-    "OverSampling": True,  # Set to True if you want to use SMOTE
+    "OverSampling": False,  # Set to True if you want to use SMOTE
     "OverUnderSampling": False,  # Set to True if you want to use SMOTEENN
     "UnderSampling": False,  # Set to True if you want to use RandomUnderSampler
 }
@@ -482,7 +482,7 @@ elif variations["OverUnderSampling"]:
         p_grid[model_name]["sample__sampling_strategy"] = [0.2, 0.3, 0.4, 0.6, 0.8]
     param_grids = p_grid
 
-## Uncomment the following lines to run GridSearchCV for each model
+#### Uncomment the following lines to run GridSearchCV for each model
 # cv_results = runGridSearch(models, param_grids, metrics_used, X, Y)
 # # imporved_models = {}
 # for param_name, gridsearchcv in cv_results.items():
